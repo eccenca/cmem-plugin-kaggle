@@ -1,4 +1,4 @@
-"""Random values workflow plugin module"""
+"""Kaggle Dataset workflow plugin module"""
 import uuid
 from secrets import token_urlsafe
 
@@ -13,30 +13,23 @@ from cmem_plugin_base.dataintegration.plugins import WorkflowPlugin
     label="Kaggle",
     description="Download datasets from kaggle library",
     documentation="""
-This example workflow operator generates random values.
+This example workflow operator downloads dataset from Kaggle library
 
-The values are generated in X rows a Y values. Both parameter can be specified:
+The dataset will be loaded from the URL specified:
 
-- 'number_of_entities': How many rows do you need.
-- 'number_of_values': How many values per row do you need.
+- 'url': Path for the required dataset.
 """,
     parameters=[
         PluginParameter(
-            name="number_of_entities",
-            label="Entities (Rows)",
-            description="How many rows will be created per run.",
-            default_value="10",
+            name="url",
+            label="Dataset URL",
+            description="URL for the dataset to download",
+            default_value="https://github.com/codeforamerica/ohana-api/blob/master/data/sample-csv/locations.csv",
         ),
-        PluginParameter(
-            name="number_of_values",
-            label="Values (Columns)",
-            description="How many values are created per entity / row.",
-            default_value="5"
-        )
     ]
 )
 class DollyPlugin(WorkflowPlugin):
-    """Example Workflow Plugin: Random Values"""
+    """Example Workflow Plugin: Kaggle Dataset"""
 
     def __init__(
             self,
