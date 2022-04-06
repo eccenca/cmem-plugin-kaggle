@@ -1,0 +1,7 @@
+# Changes here will be overwritten by Copier
+_commit: v1.0.2
+_src_path: gh:eccenca/cmem-plugin-template
+author_mail: sairangareddy22@gmail.com
+author_name: Ranga Reddy Nukala
+project_description: Downloads datasets from kaggle
+project_slug: kaggle
