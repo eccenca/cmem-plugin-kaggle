@@ -147,3 +147,6 @@ co
 artifacts
 .DS_Store
 .task
+
+# Constants
+cmem_plugin_kaggle/constants.py
