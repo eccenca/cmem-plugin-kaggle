@@ -1,7 +1,7 @@
 """Plugin tests."""
-from kaggle_import import KaggleImport
+import pytest
+from cmem_plugin_kaggle.kaggle_import import KaggleSearch, KaggleImport
 from cmem_plugin_base.dataintegration.discovery import discover_plugins
-
 
 # package prefix
 def test_regestration():
@@ -9,10 +9,16 @@ def test_regestration():
     assert len(plugins) > 0
 
 
-def test_execution():
-    """Test plugin execution"""
-    url = "http://winterolympicsmedals.com/medals.csv"
+def test_completion():
+    parameter = KaggleSearch()
+    completion = parameter.autocomplete(query_terms=[""])
+    assert isinstance(completion, list)
 
-    plugin = KaggleImport(url=url)
-    plugin.execute()
-    # write assertions
+
+def test_failing_init():
+    """Test RandomValues plugin."""
+    with pytest.raises(ValueError):
+        KaggleImport(url="https://www.youtube.com/")
+    with pytest.raises(ValueError):
+        KaggleImport(url="https://www.kaggle.com/datasets/sayansh001/crystal-structure-classification")
+

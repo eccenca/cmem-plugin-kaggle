@@ -1,18 +1,58 @@
 """Kaggle Dataset workflow plugin module"""
-from constants import KAGGLE_USERNAME,KAGGLE_KEY
-import os
+
 from typing import Optional
-from kaggle.api.kaggle_api_extended import KaggleApi
+import os
+
+from kaggle.api import KaggleApi
+
 from cmem_plugin_base.dataintegration.description import Plugin, PluginParameter
 from cmem_plugin_base.dataintegration.plugins import WorkflowPlugin
 from cmem_plugin_base.dataintegration.types import StringParameterType, Autocompletion
+from cmem_plugin_base.dataintegration.entity import Entities
+
+api = KaggleApi()
+
+KAGGLE_USERNAME = 'rangareddynukala'
+KAGGLE_KEY = '0678724483534d355962db8f07650473'
 
 
-def list_to_string(query_list: [str]):
-    string_result = ""
-    for element in query_list:
-        string_result += element
-    return string_result
+def get_dataset_value(dataset):
+    """Returns Kaggle Dataset File Slug"""
+
+    name = str(dataset)
+    values = name.split("/")
+    return values[2]
+
+
+def get_dataset_label(dataset):
+    """Returns Kaggle Dataset Owner Slug"""
+
+    name = str(dataset)
+    values = name.split("/")
+    return values[1]
+
+
+def list_to_string(query_list: list[str]):
+    """Converts each query term to a single search term"""
+
+    string_join = ""
+    return string_join.join(query_list)
+
+
+def auth():
+    """Kaggle Authenticate"""
+
+    # Set environment variables
+    os.environ['KAGGLE_USERNAME'] = KAGGLE_USERNAME
+    os.environ['KAGGLE_KEY'] = KAGGLE_KEY
+    api.authenticate()
+
+
+def search(query_terms: list[str]):
+    """Kaggle Dataset Search"""
+
+    datasets = api.dataset_list(search=list_to_string(query_list=query_terms))
+    return datasets
 
 
 class KaggleSearch(StringParameterType):
@@ -26,18 +66,16 @@ class KaggleSearch(StringParameterType):
     def autocomplete(
             self, query_terms: list[str], project_id: Optional[str] = None
     ) -> list[Autocompletion]:
+        auth()
         result = []
-        # Set environment variables
-        os.environ['KAGGLE_USERNAME'] = KAGGLE_USERNAME
-        os.environ['KAGGLE_KEY'] = KAGGLE_KEY
-        api = KaggleApi()
-        api.authenticate()
         if len(query_terms) != 0:
-            datasets = api.dataset_list(search=list_to_string(query_list=query_terms))
+            datasets = search(query_terms=query_terms)
             for dataset in datasets:
-                value = str(dataset.size)
-                label = str(dataset)
-                result.append(Autocompletion(value=value, label=f"{label}"))
+                size = dataset.size
+                value = get_dataset_value(dataset)
+                label = get_dataset_label(dataset)
+                result.append(Autocompletion(value=value,
+                                             label=f"{value}: {label} : {size}"))
             result.sort(key=lambda x: x.label)  # type: ignore
             return result
         if len(query_terms) == 0:
@@ -78,7 +116,7 @@ class KaggleImport(WorkflowPlugin):
             raise ValueError("The specified URL is not valid")
         self.url = url
 
-    def execute(self, inputs=()) -> str:
+    def execute(self, inputs=()) -> None:
         self.log.info("Start creating random values.")
         self.log.info(f"Config length: {len(self.config.get())}")
-        return self.url
+        pass
