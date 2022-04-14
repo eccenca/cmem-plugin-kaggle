@@ -18,7 +18,8 @@ def test_completion():
 def test_failing_init():
     """Test RandomValues plugin."""
     with pytest.raises(ValueError):
-        KaggleImport(url="https://www.youtube.com/")
+        KaggleImport(dataset="https://www.youtube.com/", file_name="data")
     with pytest.raises(ValueError):
-        KaggleImport(url="https://www.kaggle.com/datasets/sayansh001/crystal-structure-classification")
+        KaggleImport(dataset="https://www.kaggle.com/datasets/sayansh001/crystal-structure-classification",
+                     file_name="data.csv")
 

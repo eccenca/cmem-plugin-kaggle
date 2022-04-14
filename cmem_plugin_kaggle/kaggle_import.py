@@ -2,13 +2,14 @@
 
 from typing import Optional
 import os
-
 from kaggle.api import KaggleApi
 
 from cmem_plugin_base.dataintegration.description import Plugin, PluginParameter
 from cmem_plugin_base.dataintegration.plugins import WorkflowPlugin
 from cmem_plugin_base.dataintegration.types import StringParameterType, Autocompletion
-from cmem_plugin_base.dataintegration.entity import Entities
+from cmem.cmempy.workspace.projects.resources.resource import (
+    create_resource,
+)
 
 api = KaggleApi()
 
@@ -16,20 +17,65 @@ KAGGLE_USERNAME = 'rangareddynukala'
 KAGGLE_KEY = '0678724483534d355962db8f07650473'
 
 
-def get_dataset_value(dataset):
-    """Returns Kaggle Dataset File Slug"""
+class KaggleDataset:
+    """ Kaggle Dataset Object for Internal Purpose"""
 
-    name = str(dataset)
-    values = name.split("/")
-    return values[2]
+    def __init__(self, owner, name):
+        """ Constructor """
+        self.owner = owner
+        self.name = name
 
 
-def get_dataset_label(dataset):
-    """Returns Kaggle Dataset Owner Slug"""
+def get_slugs(dataset):
+    """ Dataset Slugs """
+    if '/' in dataset:
+        api.validate_dataset_string(dataset)
+        dataset_urls = dataset.split('/')
+        dataset_slugs = KaggleDataset(dataset_urls[1], dataset_urls[2])
+        return dataset_slugs
+    return None
 
-    name = str(dataset)
-    values = name.split("/")
-    return values[1]
+
+def download_file(dataset, file_name):
+    """ dataset file download """
+    files = list_files(dataset)
+    print(f'DATASET: {dataset}')
+    print(f'FILES: {files}')
+
+    if files is not None and len(files) != 0:
+        for file in files:
+            if str(file).lower() == file_name.lower():
+                print("🐸 Downloading")
+                # status = api.dataset_download_file(dataset, file_name=file_name)
+                if '/' in dataset:
+                    api.validate_dataset_string(dataset)
+                    dataset_urls = dataset.split('/')
+                    owner_slug = dataset_urls[0]
+                    dataset_slug = dataset_urls[1]
+                else:
+                    owner_slug = api.get_config_value(api.CONFIG_NAME_USER)
+                    dataset_slug = dataset
+
+                response = api.process_response(
+                    api.datasets_download_file_with_http_info(
+                        owner_slug=owner_slug,
+                        dataset_slug=dataset_slug,
+                        file_name=file_name,
+                        _preload_content=False))
+                return response
+            return None
+        return None
+    return None
+
+
+def create_resource_from_file(dataset, file_name):
+    """ Create Dataset """
+    create_resource(
+        project_name='python-plugins',
+        resource_name='data.csv',
+        file_resource=download_file(dataset=dataset, file_name=file_name),
+        replace=True
+    )
 
 
 def list_to_string(query_list: list[str]):
@@ -55,6 +101,21 @@ def search(query_terms: list[str]):
     return datasets
 
 
+def list_files(dataset):
+    """ List Dataset Files """
+    files = api.dataset_list_files(dataset).files
+    if len(files) != 0:
+        return files
+    return None
+
+
+def validate_file(dataset: str, file_name: str):
+    """ Validate File """
+    files = list_files(dataset)
+    print(f'FILE NAMES: {files}')
+    print(f'FILE NAME: {file_name}')
+
+
 class KaggleSearch(StringParameterType):
     """Kaggle Search Type"""
 
@@ -63,19 +124,17 @@ class KaggleSearch(StringParameterType):
     # auto complete for labels
     autocomplete_value_with_labels: bool = True
 
-    def autocomplete(
-            self, query_terms: list[str], project_id: Optional[str] = None
-    ) -> list[Autocompletion]:
+    def autocomplete(self,
+                     query_terms: list[str], project_id: Optional[str] = None
+                     ) -> list[Autocompletion]:
         auth()
         result = []
         if len(query_terms) != 0:
             datasets = search(query_terms=query_terms)
             for dataset in datasets:
-                size = dataset.size
-                value = get_dataset_value(dataset)
-                label = get_dataset_label(dataset)
-                result.append(Autocompletion(value=value,
-                                             label=f"{value}: {label} : {size}"))
+                slug = get_slugs(str(dataset))
+                result.append(Autocompletion(value=f"{slug.owner}/{slug.name}",
+                                             label=f"{slug.owner}:{slug.name}"))
             result.sort(key=lambda x: x.label)  # type: ignore
             return result
         if len(query_terms) == 0:
@@ -94,14 +153,20 @@ This example workflow operator downloads dataset from Kaggle library
 
 The dataset will be loaded from the URL specified:
 
-- 'url': Path for the required dataset.
+- 'dataset': Name of the dataset to be needed.
+- 'file_name': Name of the file to be downloaded.
 """,
     parameters=[
         PluginParameter(
-            name="url",
-            label="Dataset URL",
-            description="URL for the dataset to download",
+            name="dataset",
+            label="Dataset",
+            description="Name of the dataset to be needed",
             param_type=KaggleSearch(),
+        ),
+        PluginParameter(
+            name="file_name",
+            label="File Name",
+            description="Name of the file to be downloaded",
         ),
     ],
 )
@@ -110,13 +175,18 @@ class KaggleImport(WorkflowPlugin):
 
     def __init__(
             self,
-            url: str,
+            dataset: str,
+            file_name: str,
     ) -> None:
-        if url is not str:
-            raise ValueError("The specified URL is not valid")
-        self.url = url
+        if dataset is not str:
+            raise ValueError("The specified Dataset is not valid")
+        self.dataset = dataset
+        if file_name is not str:
+            raise ValueError("The specified File name is not valid")
+        self.file_name = file_name
 
     def execute(self, inputs=()) -> None:
         self.log.info("Start creating random values.")
         self.log.info(f"Config length: {len(self.config.get())}")
-        pass
+        create_resource_from_file(dataset=self.dataset, file_name=self.file_name)
+        self.log.info("Resource Updated")
