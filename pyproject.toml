@@ -20,6 +20,9 @@ python = "^3.9"
 cmem-plugin-base = "^1"
 kaggle = "^1.5.12"
 cmem-cmempy = "^21.11.5"
+requests = "^2.27.1"
+types-requests = "^2.27.24"
+pandas = "^1.4.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.0"

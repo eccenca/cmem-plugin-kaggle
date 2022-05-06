@@ -3,6 +3,7 @@ import pytest
 from cmem_plugin_kaggle.kaggle_import import KaggleSearch, KaggleImport
 from cmem_plugin_base.dataintegration.discovery import discover_plugins
 
+
 # package prefix
 def test_regestration():
     plugins = discover_plugins(package_name="cmem_plugin_kaggle")
@@ -18,8 +19,9 @@ def test_completion():
 def test_failing_init():
     """Test RandomValues plugin."""
     with pytest.raises(ValueError):
-        KaggleImport(dataset="https://www.youtube.com/", file_name="data")
+        KaggleImport(dataset=123, file_name="data")
     with pytest.raises(ValueError):
-        KaggleImport(dataset="https://www.kaggle.com/datasets/sayansh001/crystal-structure-classification",
-                     file_name="data.csv")
-
+        KaggleImport(
+            dataset="https://www.kaggle.com/datasets/sayansh001/crystal-structure-classification",
+            file_name=12,
+        )
