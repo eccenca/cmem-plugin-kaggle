@@ -4,7 +4,9 @@ from typing import Optional
 import os
 from secrets import token_urlsafe, token_hex
 import time
+from zipfile import ZipFile
 import kaggle
+
 
 from cmem_plugin_base.dataintegration.description import (
     Plugin,
@@ -18,7 +20,6 @@ from cmem_plugin_base.dataintegration.types import (
     StringParameterType,
     Autocompletion
 )
-from cmem.cmempy.workspace.projects.datasets.dataset import create_dataset
 from cmem.cmempy.workspace.projects.resources.resource import create_resource
 
 RANDOM_FUNCTIONS = [
@@ -57,57 +58,31 @@ def get_slugs(dataset):
         dataset_urls = dataset.split("/")
         dataset_slugs = KaggleDataset(dataset_urls[1], dataset_urls[2])
         return dataset_slugs
-
     return None
 
 
-def download_file(dataset, file_name):
-    """dataset file download"""
-    files = list_files(dataset)
-    print(f"DATASET: {dataset}")
-    print(f"FILES: {files}")
-
-    if files is not None and len(files) != 0:
-        for file in files:
-            if str(file).lower() == file_name.lower():
-                print("🐸 Downloading")
-                # status = api.dataset_download_file(dataset, file_name=file_name)
-                if "/" in dataset:
-                    api.validate_dataset_string(dataset)
-                    dataset_urls = dataset.split("/")
-                    owner_slug = dataset_urls[0]
-                    dataset_slug = dataset_urls[1]
-                else:
-                    owner_slug = api.get_config_value(api.CONFIG_NAME_USER)
-                    dataset_slug = dataset
-
-                response = api.process_response(
-                    api.datasets_download_file_with_http_info(
-                        owner_slug=owner_slug,
-                        dataset_slug=dataset_slug,
-                        file_name=file_name,
-                        _preload_content=True,
-                    )
-                )
-                return response
-            return None
-        return None
-    return None
+def find_file(sample_file_name: str):
+    """ Check weather the file is downloaded or not"""
+    file_path = f'./{sample_file_name}'
+    if os.path.exists(file_path):
+        create_resource_from_file(sample_file_name)
+    elif os.path.exists(get_zip_file_path(sample_file_name)):
+        unzip_file(get_zip_file_path(sample_file_name))
+        find_file(sample_file_name)
+    else:
+        raise ValueError('FILE IS IN FOLDER')
 
 
-def create_dataset_from_file(sample_file_name):
-    """Create Dataset"""
-    # try:
-    with open(sample_file_name, 'rb') as response_file:
-        value = create_dataset(
-            project_id='python-plugins',
-            dataset_type='csv',
-            parameter=None,
-        )
-        print(f'{response_file.read()}')
-        print(f'HEY {value}')
-    # except FileNotFoundError:
-    #     print('File is missing')
+def get_zip_file_path(file_name) -> str:
+    """ Returns the zip of a file name"""
+    return f'{file_name}.zip'
+
+
+def unzip_file(file_path):
+    """ Unzip the file """
+    with ZipFile(file_path, 'r') as zip_file:
+        zip_file.extractall('./')
+        zip_file.close()
 
 
 def create_resource_from_file(sample_file_name):
@@ -153,11 +128,22 @@ def list_files(dataset):
     return None
 
 
-def validate_file(dataset: str, file_name: str):
-    """Validate File"""
-    files = list_files(dataset)
-    print(f"FILE NAMES: {files}")
-    print(f"FILE NAME: {file_name}")
+def validate_file_name(dataset: str, file_name: str) -> bool:
+    """ Validate File Exists"""
+    auth()
+    files = list_files(dataset=dataset)
+    for file in files:
+        if str(file).lower() == file_name.lower():
+            return False
+    return True
+
+
+def change_space_format(string: str) -> bool:
+    """Make changes"""
+    for element in string:
+        if element == " ":
+            return True
+    return False
 
 
 class KaggleSearch(StringParameterType):
@@ -187,29 +173,6 @@ class KaggleSearch(StringParameterType):
             result.append(Autocompletion(value=value, label=f"{label}"))
         result.sort(key=lambda x: x.label)  # type: ignore
         return result
-
-
-def search_dataset():
-    """Search Dataset"""
-    auth()
-    datasets = search(query_terms=['o', 'n', 't', 'o', ' ', 'l', 'o', 'g', 'y'])
-    print(len(datasets))
-    for dataset in datasets:
-        size = dataset.size
-        slug = get_slugs(str(dataset))
-        print(slug)
-        dataset_name = f'{slug.owner}/{slug.name}'
-        response = download_file(dataset_name, file_name='anime-ontology.csv')
-        print(f'{slug.owner}: {slug.name} : {size}')
-        tags = dataset.tags
-        if len(tags) != 0:
-            # for tag in tags:
-            print(f'TAGs: {tags}')
-        versions = dataset.versions
-        if len(versions) != 0:
-            # for version in versions:
-            print(f'VERSIONs: {versions}')
-        return response
 
 
 def download_files(dataset, file_name):
@@ -252,10 +215,11 @@ class KaggleImport(WorkflowPlugin):
             dataset: str,
             file_name: str,
     ) -> None:
-        if not isinstance(dataset, str):
-            raise ValueError("The specified Dataset is not valid")
-        if not isinstance(file_name, str):
-            raise ValueError("The specified File name is not valid")
+        if api.validate_dataset_string(dataset=dataset):
+            raise ValueError("The specified dataset is not valid")
+        if validate_file_name(dataset=dataset, file_name=file_name):
+            raise ValueError("The specified file doesn't exists "
+                             "in the specified dataset")
         self.dataset = dataset
         self.file_name = file_name
 
@@ -263,9 +227,10 @@ class KaggleImport(WorkflowPlugin):
         setup_cmempy_super_user_access()
         self.log.info("Start creating random values.")
         # self.log.info(f"Config length: {len(self.config.get())}")
-        sample_dataset = 'imdevskp/cholera-dataset'
-        sample_file_name = 'data.csv'
-        download_files(dataset=sample_dataset, file_name=sample_file_name)
+        if change_space_format(string=self.file_name):
+            self.file_name = self.file_name.replace(" ", "%20")
+
+        download_files(dataset=self.dataset, file_name=self.file_name)
         time.sleep(6)
 
-        create_resource_from_file(sample_file_name)
+        find_file(self.file_name)
