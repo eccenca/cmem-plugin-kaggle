@@ -1,11 +1,9 @@
 """Kaggle Dataset workflow plugin module"""
-
 from typing import Optional
 import os
-from secrets import token_urlsafe, token_hex
 import time
 from zipfile import ZipFile
-import kaggle
+from kaggle.api import KaggleApi
 
 
 from cmem_plugin_base.dataintegration.description import (
@@ -22,24 +20,10 @@ from cmem_plugin_base.dataintegration.types import (
 )
 from cmem.cmempy.workspace.projects.resources.resource import create_resource
 
-RANDOM_FUNCTIONS = [
-    ["token_urlsafe", "Return a random URL-safe text string."],
-    ["token_hex", "Return a random text string, in hexadecimal."],
-]
-
-api = kaggle.api
+api = KaggleApi()
 
 KAGGLE_USERNAME = "rangareddynukala"
 KAGGLE_KEY = "0678724483534d355962db8f07650473"
-
-
-def _create_value(random_function: str, string_length: int = 16) -> str:
-    """Create random values for import"""
-    if random_function != "token_urlsafe":
-        if random_function == "token_hex":
-            return token_hex(string_length)
-        raise ValueError("Unknown random function value.")
-    return token_urlsafe(string_length)
 
 
 class KaggleDataset:
@@ -215,6 +199,7 @@ class KaggleImport(WorkflowPlugin):
             dataset: str,
             file_name: str,
     ) -> None:
+        # pylint: disable=unused-argument
         if api.validate_dataset_string(dataset=dataset):
             raise ValueError("The specified dataset is not valid")
         if validate_file_name(dataset=dataset, file_name=file_name):
