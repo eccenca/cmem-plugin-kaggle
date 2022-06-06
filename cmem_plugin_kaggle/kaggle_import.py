@@ -5,7 +5,6 @@ import time
 from zipfile import ZipFile
 from kaggle.api import KaggleApi
 
-
 from cmem_plugin_base.dataintegration.description import (
     Plugin,
     PluginParameter
@@ -18,7 +17,10 @@ from cmem_plugin_base.dataintegration.types import (
     StringParameterType,
     Autocompletion
 )
-from cmem.cmempy.workspace.projects.resources.resource import create_resource
+from cmem.cmempy.workspace.projects.resources.resource import (
+    create_resource,
+    resource_exist
+)
 
 api = KaggleApi()
 
@@ -40,19 +42,20 @@ def get_slugs(dataset):
     if "/" in dataset:
         api.validate_dataset_string(dataset)
         dataset_urls = dataset.split("/")
-        dataset_slugs = KaggleDataset(dataset_urls[1], dataset_urls[2])
+        dataset_slugs = KaggleDataset(dataset_urls[0], dataset_urls[1])
         return dataset_slugs
     return None
 
 
-def find_file(sample_file_name: str):
+def find_file(project_id: str, remote_file_name: str):
     """ Check weather the file is downloaded or not"""
-    file_path = f'./{sample_file_name}'
+    file_path = f'./{remote_file_name}'
     if os.path.exists(file_path):
-        create_resource_from_file(sample_file_name)
-    elif os.path.exists(get_zip_file_path(sample_file_name)):
-        unzip_file(get_zip_file_path(sample_file_name))
-        find_file(sample_file_name)
+        create_resource_from_file(project_id=project_id,
+                                  remote_file_name=remote_file_name)
+    elif os.path.exists(get_zip_file_path(remote_file_name)):
+        unzip_file(get_zip_file_path(remote_file_name))
+        find_file(project_id=project_id, remote_file_name=remote_file_name)
     else:
         raise ValueError('FILE IS IN FOLDER')
 
@@ -69,15 +72,19 @@ def unzip_file(file_path):
         zip_file.close()
 
 
-def create_resource_from_file(sample_file_name):
+def create_resource_from_file(project_id: str, remote_file_name: str):
     """Create Resource"""
+    exist = resource_exist(
+        project_name=project_id,
+        resource_name=remote_file_name
+    )
 
-    with open(sample_file_name, 'rb') as response_file:
+    with open(remote_file_name, 'rb') as response_file:
         create_resource(
-            project_name='python-plugins',
-            resource_name=sample_file_name,
+            project_name=project_id,
+            resource_name=remote_file_name,
             file_resource=response_file,
-            replace=False,
+            replace=exist,
         )
 
 
@@ -138,9 +145,10 @@ class KaggleSearch(StringParameterType):
     # auto complete for labels
     autocomplete_value_with_labels: bool = True
 
-    def autocomplete(self,
-                     query_terms: list[str], project_id: Optional[str] = None
-                     ) -> list[Autocompletion]:
+    def autocomplete(
+            self, query_terms: list[str], project_id: Optional[str] = None
+    ) -> list[Autocompletion]:
+
         auth()
         result = []
         if len(query_terms) != 0:
@@ -148,7 +156,7 @@ class KaggleSearch(StringParameterType):
             for dataset in datasets:
                 slug = get_slugs(str(dataset))
                 result.append(Autocompletion(value=f"{slug.owner}/{slug.name}",
-                                             label=f"{slug.owner}:{slug.name}"))
+                                             label=f"{slug.owner}/{slug.name}"))
             result.sort(key=lambda x: x.label)  # type: ignore
             return result
         if len(query_terms) == 0:
@@ -199,23 +207,21 @@ class KaggleImport(WorkflowPlugin):
             dataset: str,
             file_name: str,
     ) -> None:
-        # pylint: disable=unused-argument
         if api.validate_dataset_string(dataset=dataset):
             raise ValueError("The specified dataset is not valid")
         if validate_file_name(dataset=dataset, file_name=file_name):
-            raise ValueError("The specified file doesn't exists "
-                             "in the specified dataset")
+            raise ValueError("The specified file doesn't exists in the specified "
+                             f"dataset and it must be from {list_files(dataset)}")
         self.dataset = dataset
         self.file_name = file_name
 
     def execute(self, inputs=()):
         setup_cmempy_super_user_access()
-        self.log.info("Start creating random values.")
-        # self.log.info(f"Config length: {len(self.config.get())}")
+        self.log.info("Start loading kaggle dataset.")
         if change_space_format(string=self.file_name):
             self.file_name = self.file_name.replace(" ", "%20")
 
         download_files(dataset=self.dataset, file_name=self.file_name)
-        time.sleep(6)
-
-        find_file(self.file_name)
+        time.sleep(1)
+        project_id = 'pythonplugins_7db4394199fcf763'
+        find_file(project_id=project_id, remote_file_name=self.file_name)
