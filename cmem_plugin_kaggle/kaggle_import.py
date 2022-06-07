@@ -10,8 +10,11 @@ from cmem_plugin_base.dataintegration.description import (
     PluginParameter
 )
 
-from cmem_plugin_base.dataintegration.utils import setup_cmempy_super_user_access
-
+from cmem_plugin_base.dataintegration.utils import (
+    setup_cmempy_super_user_access,
+    split_task_id
+)
+from cmem_plugin_base.dataintegration.parameter.dataset import DatasetParameterType
 from cmem_plugin_base.dataintegration.plugins import WorkflowPlugin
 from cmem_plugin_base.dataintegration.types import (
     StringParameterType,
@@ -182,13 +185,14 @@ This example workflow operator downloads dataset from Kaggle library
 
 The dataset will be loaded from the URL specified:
 
-- 'dataset': Name of the dataset to be needed.
+- 'kaggle_dataset': Name of the dataset to be needed.
 - 'file_name': Name of the file to be downloaded.
+- 'dataset': To which Dataset to write the response.
 """,
     parameters=[
         PluginParameter(
-            name="dataset",
-            label="Dataset",
+            name="kaggle_dataset",
+            label="Kaggle Dataset",
             description="Name of the dataset to be needed",
             param_type=KaggleSearch(),
         ),
@@ -197,6 +201,12 @@ The dataset will be loaded from the URL specified:
             label="File Name",
             description="Name of the file to be downloaded",
         ),
+        PluginParameter(
+            name="dataset",
+            label="Dataset",
+            description="To which Dataset to write the response",
+            param_type=DatasetParameterType(dataset_type="csv")
+        )
     ],
 )
 class KaggleImport(WorkflowPlugin):
@@ -204,16 +214,23 @@ class KaggleImport(WorkflowPlugin):
 
     def __init__(
             self,
-            dataset: str,
+            kaggle_dataset: str,
             file_name: str,
+            dataset: str = "",
     ) -> None:
-        if api.validate_dataset_string(dataset=dataset):
+        if api.validate_dataset_string(dataset=kaggle_dataset):
             raise ValueError("The specified dataset is not valid")
-        if validate_file_name(dataset=dataset, file_name=file_name):
+        if validate_file_name(dataset=kaggle_dataset, file_name=file_name):
             raise ValueError("The specified file doesn't exists in the specified "
-                             f"dataset and it must be from {list_files(dataset)}")
-        self.dataset = dataset
+                             f"dataset and it must be from "
+                             f"{list_files(kaggle_dataset)}")
+        self.kaggle_dataset = kaggle_dataset
         self.file_name = file_name
+        self.dataset = dataset
+
+        project_name, task_name = split_task_id(self.dataset)
+        self.project_name = project_name
+        self.task_name = task_name
 
     def execute(self, inputs=()):
         setup_cmempy_super_user_access()
@@ -221,7 +238,6 @@ class KaggleImport(WorkflowPlugin):
         if change_space_format(string=self.file_name):
             self.file_name = self.file_name.replace(" ", "%20")
 
-        download_files(dataset=self.dataset, file_name=self.file_name)
+        download_files(dataset=self.kaggle_dataset, file_name=self.file_name)
         time.sleep(1)
-        project_id = 'pythonplugins_7db4394199fcf763'
-        find_file(project_id=project_id, remote_file_name=self.file_name)
+        find_file(project_id=self.project_name, remote_file_name=self.file_name)
