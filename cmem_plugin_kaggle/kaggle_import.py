@@ -4,12 +4,10 @@ import os
 import time
 from zipfile import ZipFile
 from kaggle.api import KaggleApi
-
 from cmem_plugin_base.dataintegration.description import (
     Plugin,
     PluginParameter
 )
-
 from cmem_plugin_base.dataintegration.utils import (
     setup_cmempy_super_user_access,
     split_task_id
@@ -186,7 +184,7 @@ def download_files(dataset, file_name):
 
 @Plugin(
     label="Kaggle",
-    plugin_id="kaggle",
+    plugin_id="cmem_plugin_kaggle",
     description="Download datasets from kaggle library",
     documentation="""
 This example workflow operator downloads dataset from Kaggle library

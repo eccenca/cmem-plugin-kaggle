@@ -36,6 +36,10 @@ def test_completion():
     completion = parameter.autocomplete(query_terms=[""])
     assert isinstance(completion, list)
 
+    parameter = KaggleSearch()
+    completion = parameter.autocomplete(query_terms=["asdcjhasdcjasdc"])
+    assert isinstance(completion, list)
+
 
 @pytest.fixture
 def setup(request):
@@ -83,9 +87,20 @@ def test_execution(setup):
 
 def test_failing_init():
     """Test RandomValues plugin."""
-    with pytest.raises(ValueError):
-        KaggleImport(kaggle_dataset="sayansh001/crystal-structure-classification", file_name="data", dataset="hello")
-    with pytest.raises(ValueError):
-        KaggleImport(kaggle_dataset="https://www.kaggle.com/datasets/sayansh001/"
-                                    "crystal-structure-classification", file_name="data",
-                     dataset="crystal-structure-classification.csv")
+
+    # Invalid Kaggle Dataset Slug
+    with pytest.raises(ValueError, match=r".*'\{username}\/{dataset-slug\}'"):
+        KaggleImport(kaggle_dataset="INVALID_FILE_NAME", file_name=RESOURCE_NAME,
+                     dataset=DATASET_ID)
+
+    # Invalid File Name of the Kaggle Dataset
+    with pytest.raises(ValueError, match=r"The specified file doesn't exists in the "
+                                         r"specified dataset and it must be from.*"):
+        KaggleImport(kaggle_dataset=KAGGLE_DATASET, file_name="INVALID_FILE_NAME",
+                     dataset=DATASET_ID)
+
+    # Invalid Dataset ID
+    with pytest.raises(ValueError, match=r'() is not a valid task ID.$'):
+        KaggleImport(kaggle_dataset=KAGGLE_DATASET,
+                     file_name=RESOURCE_NAME,
+                     dataset='INVALID_DATASET_ID')
