@@ -22,8 +22,8 @@ from cmem_plugin_base.dataintegration.types import (
 )
 from cmem.cmempy.workspace.projects.resources.resource import (
     create_resource,
-    resource_exist
 )
+from cmem.cmempy.workspace.tasks import get_task
 
 api = KaggleApi()
 
@@ -50,15 +50,18 @@ def get_slugs(dataset):
     return None
 
 
-def find_file(project_id: str, remote_file_name: str):
+def find_file(project_id: str, remote_file_name: str, dataset_file_name: str):
     """ Check weather the file is downloaded or not"""
     file_path = f'./{remote_file_name}'
     if os.path.exists(file_path):
         create_resource_from_file(project_id=project_id,
-                                  remote_file_name=remote_file_name)
+                                  remote_file_name=remote_file_name,
+                                  dataset_file_name=dataset_file_name)
     elif os.path.exists(get_zip_file_path(remote_file_name)):
         unzip_file(get_zip_file_path(remote_file_name))
-        find_file(project_id=project_id, remote_file_name=remote_file_name)
+        find_file(project_id=project_id,
+                  remote_file_name=remote_file_name,
+                  dataset_file_name=dataset_file_name)
     else:
         raise ValueError('FILE IS IN FOLDER')
 
@@ -75,20 +78,25 @@ def unzip_file(file_path):
         zip_file.close()
 
 
-def create_resource_from_file(project_id: str, remote_file_name: str):
+def create_resource_from_file(project_id: str,
+                              remote_file_name: str,
+                              dataset_file_name: str):
     """Create Resource"""
-    exist = resource_exist(
-        project_name=project_id,
-        resource_name=remote_file_name
-    )
-
     with open(remote_file_name, 'rb') as response_file:
         create_resource(
             project_name=project_id,
-            resource_name=remote_file_name,
+            resource_name=get_file_name_of_dataset(project_id=project_id,
+                                                   task_id=dataset_file_name),
             file_resource=response_file,
-            replace=exist,
+            replace=True,
         )
+
+
+def get_file_name_of_dataset(project_id: str, task_id: str) -> str:
+    """Get Resource name of  a dataset in a project"""
+    task_meta_data = get_task(project=project_id, task=task_id)
+    resource_name = str(task_meta_data["data"]["parameters"]["file"]["value"])
+    return resource_name
 
 
 def list_to_string(query_list: list[str]):
@@ -185,9 +193,9 @@ This example workflow operator downloads dataset from Kaggle library
 
 The dataset will be loaded from the URL specified:
 
-- 'kaggle_dataset': Name of the dataset to be needed.
-- 'file_name': Name of the file to be downloaded.
-- 'dataset': To which Dataset to write the response.
+- `kaggle_dataset`: Name of the dataset to be needed.
+- `file_name`: Name of the file to be downloaded.
+- `dataset`: To which Dataset to write the response.
 """,
     parameters=[
         PluginParameter(
@@ -240,4 +248,6 @@ class KaggleImport(WorkflowPlugin):
 
         download_files(dataset=self.kaggle_dataset, file_name=self.file_name)
         time.sleep(1)
-        find_file(project_id=self.project_name, remote_file_name=self.file_name)
+        find_file(project_id=self.project_name,
+                  remote_file_name=self.file_name,
+                  dataset_file_name=self.task_name)
