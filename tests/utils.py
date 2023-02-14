@@ -12,6 +12,7 @@ from cmem_plugin_base.dataintegration.context import (
     TaskContext,
     ExecutionContext,
     ReportContext,
+    SystemContext,
 )
 
 needs_cmem: MarkDecorator = pytest.mark.skipif(
@@ -26,7 +27,7 @@ class TestUserContext(UserContext):
 
     def __init__(self):
         # get access token from default service account
-        access_token: str = get_token()["access_token"]
+        access_token: str = f"{get_token()['access_token']}"
         self.token = lambda: access_token
 
 
@@ -52,3 +53,18 @@ class TestExecutionContext(ExecutionContext):
         self.report = ReportContext()
         self.task = TestTaskContext(project_id=project_id)
         self.user = user
+
+
+class TestSystemContext(SystemContext):
+    def __init__(self):
+        self._version = "1.0.0"
+        self._prefix = "encrypted_"
+
+    def di_version(self) -> str:
+        return f"{self._version}"
+
+    def encrypt(self, value: str) -> str:
+        return f"{self._prefix + value}"
+
+    def decrypt(self, value: str) -> str:
+        return value.replace(self._prefix, "")
