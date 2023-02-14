@@ -62,6 +62,7 @@ def project():
     )
 
     yield None
+    delete_files()
     delete_project(PROJECT_NAME)
 
 

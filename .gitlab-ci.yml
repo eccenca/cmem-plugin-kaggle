@@ -25,19 +25,19 @@ check:
   artifacts:
     when: always
     reports:
-      cobertura:
-        - ./dist/coverage.xml
-      junit:
-        - ./dist/junit-bandit.xml
-        - ./dist/junit-flake8.xml
-        - ./dist/junit-mypy.xml
-        - ./dist/junit-pylint.xml
-        - ./dist/junit-pytest.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: dist/coverage.xml
     paths:
-      - ./dist/badge-coverage.svg
-      - ./dist/badge-tests.svg
-      - ./dist/coverage
-      - ./dist/coverage.xml
+      - dist/badge-coverage.svg
+      - dist/badge-tests.svg
+      - dist/coverage
+      - dist/coverage.xml
+
+safety:
+  stage: test
+  script:
+    - task check:safety
 
 build:
   stage: build
