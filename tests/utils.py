@@ -19,6 +19,20 @@ needs_cmem: MarkDecorator = pytest.mark.skipif(
     "CMEM_BASE_URI" not in os.environ, reason="Needs CMEM configuration"
 )
 
+needs_kaggle: MarkDecorator = pytest.mark.skipif(
+    "KAGGLE_USERNAME" not in os.environ,
+    "KAGGLE_KEY" not in os.environ,
+    reason="Needs Kaggle API configuration",
+)
+
+
+def get_kaggle_config():
+    """To get the kaggle configuration from environment variables"""
+    return {
+        "username": os.environ.get("KAGGLE_USERNAME", ""),
+        "key": os.environ.get("KAGGLE_KEY", ""),
+    }
+
 
 class TestUserContext(UserContext):
     """dummy user context that can be used in tests"""

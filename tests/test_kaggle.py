@@ -14,6 +14,8 @@ from cmem_plugin_base.dataintegration.parameter.password import Password
 from cmem.cmempy.workspace.projects.resources.resource import resource_exist
 from tests.utils import (
     needs_cmem,
+    needs_kaggle,
+    get_kaggle_config,
     TestTaskContext,
     TestExecutionContext,
     TestSystemContext,
@@ -24,18 +26,17 @@ DATASET_NAME = "annual"
 DATASET_TYPE = "csv"
 RESOURCE_NAME = f"{DATASET_NAME}.{DATASET_TYPE}"
 KAGGLE_DATASET = "programmerrdai/global-temperature"
-KAGGLE_USERNAME = "rangareddynukala"
-KAGGLE_PASSWORD = Password(
-    encrypted_value="0678724483534d355962db8f07650473", system=TestSystemContext()
-)
+KAGGLE_CONFIG = get_kaggle_config()
+KAGGLE_KEY = Password(encrypted_value=KAGGLE_CONFIG["key"], system=TestSystemContext())
 
 
+@needs_kaggle
 def test_completion():
     """test completion"""
     parameter = KaggleSearch()
     completion = parameter.autocomplete(
         query_terms=[""],
-        depend_on_parameter_values=[KAGGLE_USERNAME, KAGGLE_PASSWORD.decrypt()],
+        depend_on_parameter_values=[KAGGLE_CONFIG["username"], KAGGLE_CONFIG["key"]],
         context=TestTaskContext(),
     )
     assert isinstance(completion, list)
@@ -43,7 +44,7 @@ def test_completion():
     parameter = KaggleSearch()
     completion = parameter.autocomplete(
         query_terms=["asdcjhasdcjasdc"],
-        depend_on_parameter_values=[KAGGLE_USERNAME, KAGGLE_PASSWORD.decrypt()],
+        depend_on_parameter_values=[KAGGLE_CONFIG["username"], KAGGLE_CONFIG["key"]],
         context=TestTaskContext(),
     )
     assert isinstance(completion, list)
@@ -76,11 +77,12 @@ def delete_files():
 
 
 @needs_cmem
+@needs_kaggle
 def test_execution(project):
     """Test plugin execution"""
     KaggleImport(
-        username=KAGGLE_USERNAME,
-        access_token=KAGGLE_PASSWORD,
+        username=KAGGLE_CONFIG["username"],
+        access_token=KAGGLE_KEY,
         kaggle_dataset=KAGGLE_DATASET,
         file_name=RESOURCE_NAME,
         dataset=DATASET_NAME,
@@ -90,14 +92,15 @@ def test_execution(project):
     )
 
 
+@needs_kaggle
 def test_failing_init():
     """Test RandomValues plugin."""
 
     # Invalid Kaggle Dataset Slug
     with pytest.raises(ValueError, match=r".*'\{username}\/{dataset-slug\}'"):
         KaggleImport(
-            username=KAGGLE_USERNAME,
-            access_token=KAGGLE_PASSWORD,
+            username=KAGGLE_CONFIG["username"],
+            access_token=KAGGLE_KEY,
             kaggle_dataset="INVALID_FILE_NAME",
             file_name=RESOURCE_NAME,
             dataset=DATASET_NAME,
@@ -110,8 +113,8 @@ def test_failing_init():
         r"specified dataset and it must be from.*",
     ):
         KaggleImport(
-            username=KAGGLE_USERNAME,
-            access_token=KAGGLE_PASSWORD,
+            username=KAGGLE_CONFIG["username"],
+            access_token=KAGGLE_KEY,
             kaggle_dataset=KAGGLE_DATASET,
             file_name="INVALID_FILE_NAME",
             dataset=DATASET_NAME,
