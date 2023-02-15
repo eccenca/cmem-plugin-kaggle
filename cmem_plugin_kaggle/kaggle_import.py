@@ -1,5 +1,5 @@
 """Kaggle Dataset workflow plugin module"""
-from typing import Sequence, Tuple, Optional
+from typing import Sequence, Tuple
 import os
 import time
 from zipfile import ZipFile
@@ -117,6 +117,51 @@ def change_space_format(string: str) -> bool:
     return False
 
 
+class DatasetFile(StringParameterType):
+    """Kaggle Dataset File Autocomplete"""
+
+    autocompletion_depends_on_parameters: list[str] = ["kaggle_dataset"]
+
+    # auto complete for values
+    allow_only_autocompleted_values: bool = True
+    # auto complete for labels
+    autocomplete_value_with_labels: bool = False
+
+    def autocomplete(
+        self,
+        query_terms: list[str],
+        depend_on_parameter_values: list[str],
+        context: PluginContext,
+    ) -> list[Autocompletion]:
+        result = []
+        if len(query_terms) != 0:
+            files = list_files(dataset=depend_on_parameter_values[0])
+            for file in files:
+                result.append(
+                    Autocompletion(
+                        value=f"{file}",
+                        label=f"{file}",
+                    )
+                )
+            result.sort(key=lambda x: x.label)  # type: ignore
+            return result
+
+        files = list_files(dataset=depend_on_parameter_values[0])
+        for file in files:
+            result.append(
+                Autocompletion(
+                    value=f"{file}",
+                    label=f"{file}",
+                )
+            )
+        result.sort(key=lambda x: x.label)  # type: ignore
+        if len(result) == 0:
+            value = ""
+            label = "No files found for this dataset"
+            result.append(Autocompletion(value=value, label=f"{label}"))
+        return result
+
+
 class KaggleSearch(StringParameterType):
     """Kaggle Search Type"""
 
@@ -173,13 +218,11 @@ The dataset will be loaded from the URL specified:
             name="username",
             label="Kaggle Username",
             description="Username of kaggle account",
-            param_type=Optional[StringParameterType],
         ),
         PluginParameter(
             name="access_token",
             label="Kaggle Access Token",
             description="Access Token of kaggle account",
-            param_type=Optional[StringParameterType],
         ),
         PluginParameter(
             name="kaggle_dataset",
@@ -191,6 +234,7 @@ The dataset will be loaded from the URL specified:
             name="file_name",
             label="File Name",
             description="Name of the file to be downloaded",
+            param_type=DatasetFile(),
         ),
         PluginParameter(
             name="dataset",
@@ -250,7 +294,7 @@ class KaggleImport(WorkflowPlugin):
             ExecutionReport(
                 entity_count=1,
                 operation="write",
-                operation_desc=f"{find_file} as been written to the project",
+                operation_desc="successfully downloaded",
                 summary=summary,
                 warnings=warnings,
             )
