@@ -17,11 +17,53 @@ default:
 stages:
   - test
   - build
+  - publish
 
-check:
+bandit:
   stage: test
   script:
-    - task check
+    - task check:bandit
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - dist/junit-bandit.xml
+
+flake8:
+  stage: test
+  script:
+    - task check:flake8
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - dist/junit-flake8.xml
+
+mypy:
+  stage: test
+  script:
+    - task check:mypy
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - dist/junit-mypy.xml
+
+pylint:
+  stage: test
+  script:
+    - task check:pylint
+  artifacts:
+    when: always
+    reports:
+      junit:
+        - dist/junit-pylint.xml
+
+pytest:
+  stage: test
+  coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
+  script:
+    - task check:pytest
   artifacts:
     when: always
     reports:
@@ -41,11 +83,28 @@ safety:
 
 build:
   stage: build
+  needs:
+    - bandit
+    - mypy
+    - pytest
+    - safety
   script:
     - task build
   artifacts:
     when: always
     paths:
-      - ./dist/*.tar.gz
-      - ./dist/*.whl
+      - dist/*.tar.gz
+      - dist/*.whl
 
+pypi:
+  # publishing only available on a tag
+  stage: publish
+  needs:
+    - flake8
+    - pylint
+    - build
+  allow_failure: true
+  when: manual
+  script:
+    - poetry config pypi-token.pypi $PYPI_TOKEN
+    - poetry publish
