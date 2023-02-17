@@ -82,7 +82,7 @@ def test_execution(project):
     """Test plugin execution"""
     KaggleImport(
         username=KAGGLE_CONFIG["username"],
-        access_token=KAGGLE_KEY,
+        api_key=KAGGLE_KEY,
         kaggle_dataset=KAGGLE_DATASET,
         file_name=RESOURCE_NAME,
         dataset=DATASET_NAME,
@@ -100,7 +100,7 @@ def test_failing_init():
     with pytest.raises(ValueError, match=r".*'\{username}\/{dataset-slug\}'"):
         KaggleImport(
             username=KAGGLE_CONFIG["username"],
-            access_token=KAGGLE_KEY,
+            api_key=KAGGLE_KEY,
             kaggle_dataset="INVALID_FILE_NAME",
             file_name=RESOURCE_NAME,
             dataset=DATASET_NAME,
@@ -114,7 +114,7 @@ def test_failing_init():
     ):
         KaggleImport(
             username=KAGGLE_CONFIG["username"],
-            access_token=KAGGLE_KEY,
+            api_key=KAGGLE_KEY,
             kaggle_dataset=KAGGLE_DATASET,
             file_name="INVALID_FILE_NAME",
             dataset=DATASET_NAME,

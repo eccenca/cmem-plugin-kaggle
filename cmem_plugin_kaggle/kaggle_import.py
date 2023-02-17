@@ -85,12 +85,12 @@ def list_to_string(query_list: list[str]):
     return string_join.join(query_list)
 
 
-def auth(username: str, access_token: str):
+def auth(username: str, api_key: str):
     """Kaggle Authenticate"""
 
     # Set environment variables
     os.environ["KAGGLE_USERNAME"] = username
-    os.environ["KAGGLE_KEY"] = access_token
+    os.environ["KAGGLE_KEY"] = api_key
     api.authenticate()
 
 
@@ -165,7 +165,7 @@ class DatasetFile(StringParameterType):
 class KaggleSearch(StringParameterType):
     """Kaggle Search Type"""
 
-    autocompletion_depends_on_parameters: list[str] = ["username", "access_token"]
+    autocompletion_depends_on_parameters: list[str] = ["username", "api_key"]
 
     # auto complete for values
     allow_only_autocompleted_values: bool = True
@@ -203,7 +203,7 @@ class KaggleSearch(StringParameterType):
 @Plugin(
     label="Kaggle",
     plugin_id="cmem_plugin_kaggle",
-    description="Download datasets from kaggle library",
+    description="Import dataset resources from Kaggle.",
     documentation="""
 This example workflow operator downloads dataset from Kaggle library
 
@@ -217,12 +217,12 @@ The dataset will be loaded from the URL specified:
         PluginParameter(
             name="username",
             label="Kaggle Username",
-            description="Username of kaggle account",
+            description="Username of Kaggle Account",
         ),
         PluginParameter(
-            name="access_token",
-            label="Kaggle Access Token",
-            description="Access Token of kaggle account",
+            name="api_key",
+            label="Kaggle Key",
+            description="API Token of Kaggle Account",
         ),
         PluginParameter(
             name="kaggle_dataset",
@@ -251,13 +251,13 @@ class KaggleImport(WorkflowPlugin):
     def __init__(
         self,
         username: str,
-        access_token: Password,
+        api_key: Password,
         kaggle_dataset: str,
         file_name: str,
         dataset: str,
     ) -> None:
         self.username = username
-        self.access_token = access_token
+        self.api_key = api_key
         if api.validate_dataset_string(dataset=kaggle_dataset):
             raise ValueError("The specified dataset is not valid")
         if self.validate_file_name(dataset=kaggle_dataset, file_name=file_name):
@@ -302,7 +302,7 @@ class KaggleImport(WorkflowPlugin):
 
     def validate_file_name(self, dataset: str, file_name: str) -> bool:
         """Validate File Exists"""
-        auth(self.username, self.access_token.decrypt())
+        auth(self.username, self.api_key.decrypt())
         files = list_files(dataset=dataset)
         for file in files:
             if str(file).lower() == file_name.lower():
@@ -311,5 +311,5 @@ class KaggleImport(WorkflowPlugin):
 
     def download_files(self, dataset, file_name):
         """Kaggle Single Dataset File Download"""
-        auth(self.username, self.access_token.decrypt())
+        auth(self.username, self.api_key.decrypt())
         api.dataset_download_file(dataset=dataset, file_name=file_name, path="./")

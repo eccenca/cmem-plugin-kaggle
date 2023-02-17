@@ -2,7 +2,7 @@
 name = "cmem-plugin-kaggle"
 version = "2.0.0"
 license = "Apache-2.0"
-description = "Downloads datasets from kaggle"
+description = "Import dataset resources from Kaggle."
 authors = ["Ranga Reddy Nukala <sairangareddy22@gmail.com>"]
 classifiers = [
     "Development Status :: 4 - Beta",
