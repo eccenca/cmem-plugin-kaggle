@@ -18,7 +18,7 @@ include = ["CHANGELOG.md"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-cmem-plugin-base = "^2.3.0rc4"
+cmem-plugin-base = "^2.3.0rc5"
 kaggle = "^1.5.12"
 
 [tool.poetry.dev-dependencies]

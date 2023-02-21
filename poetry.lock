@@ -118,7 +118,7 @@ six = "*"
 
 [[package]]
 name = "cmem-plugin-base"
-version = "2.3.0rc4"
+version = "2.3.0rc5"
 description = "Base classes for developing eccenca Coporate Memory plugins."
 category = "main"
 optional = false
@@ -252,8 +252,8 @@ smmap = ">=3.0.1,<6"
 
 [[package]]
 name = "GitPython"
-version = "3.1.30"
-description = "GitPython is a python library used to interact with Git repositories"
+version = "3.1.31"
+description = "GitPython is a Python library used to interact with Git repositories"
 category = "dev"
 optional = false
 python-versions = ">=3.7"
@@ -903,7 +903,7 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,>=2.7"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "fd7f1182ad58b5da991b8249f0ba0ceefc98aa0a91fcb96ceced35fb8030b89c"
+content-hash = "2bfb765b12d4b94b8132303fedae54e6786f7ca308a2dab20641eca83556955c"
 
 [metadata.files]
 astroid = [
@@ -1048,8 +1048,8 @@ cmem-cmempy = [
     {file = "cmem_cmempy-22.2.tar.gz", hash = "sha256:21d8093e1262f0c3f4c204648e113e738a4bacdfee43ee4f3ff7084580c1db2b"},
 ]
 cmem-plugin-base = [
-    {file = "cmem-plugin-base-2.3.0rc4.tar.gz", hash = "sha256:ceb701766378679d183436a29a752fbe49290844046bba62f661171fea4340ec"},
-    {file = "cmem_plugin_base-2.3.0rc4-py3-none-any.whl", hash = "sha256:34c8db17e82f55f9b07e10eb270b77a21eed705cad7220b2c5db006a40886dab"},
+    {file = "cmem-plugin-base-2.3.0rc5.tar.gz", hash = "sha256:77fc05eabf9fcd5f8386b32421daf616f8bc44fd6bc8573eea7debd1e46fc2e0"},
+    {file = "cmem_plugin_base-2.3.0rc5-py3-none-any.whl", hash = "sha256:3297d7c7f8a380eb202f3d6ced1f338161f9a002f4a6fe4245699d52b00b6be1"},
 ]
 colorama = [
     {file = "colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6"},
@@ -1141,8 +1141,8 @@ gitdb = [
     {file = "gitdb-4.0.10.tar.gz", hash = "sha256:6eb990b69df4e15bad899ea868dc46572c3f75339735663b81de79b06f17eb9a"},
 ]
 GitPython = [
-    {file = "GitPython-3.1.30-py3-none-any.whl", hash = "sha256:cd455b0000615c60e286208ba540271af9fe531fa6a87cc590a7298785ab2882"},
-    {file = "GitPython-3.1.30.tar.gz", hash = "sha256:769c2d83e13f5d938b7688479da374c4e3d49f71549aaf462b646db9602ea6f8"},
+    {file = "GitPython-3.1.31-py3-none-any.whl", hash = "sha256:f04893614f6aa713a60cbbe1e6a97403ef633103cdd0ef5eb6efe0deb98dbe8d"},
+    {file = "GitPython-3.1.31.tar.gz", hash = "sha256:8ce3bcf69adfdf7c7d503e78fd3b1c492af782d58893b650adb2ac8912ddd573"},
 ]
 idna = [
     {file = "idna-3.4-py3-none-any.whl", hash = "sha256:90b77e79eaa3eba6de819a0c442c0b4ceefc341a7a2ab77d7562bf49f425c5c2"},
