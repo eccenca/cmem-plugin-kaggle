@@ -1,5 +1,5 @@
 """Kaggle Dataset workflow plugin module"""
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Any
 import os
 import time
 from zipfile import ZipFile
@@ -125,14 +125,17 @@ class DatasetFile(StringParameterType):
     # auto complete for values
     allow_only_autocompleted_values: bool = True
     # auto complete for labels
-    autocomplete_value_with_labels: bool = False
+    autocomplete_value_with_labels: bool = True
 
     def autocomplete(
         self,
         query_terms: list[str],
-        depend_on_parameter_values: list[str],
+        depend_on_parameter_values: list[Any],
         context: PluginContext,
     ) -> list[Autocompletion]:
+        if not depend_on_parameter_values:
+            raise ValueError("Select dataset before choosing a file")
+
         result = []
         if len(query_terms) != 0:
             files = list_files(dataset=depend_on_parameter_values[0])
@@ -175,10 +178,10 @@ class KaggleSearch(StringParameterType):
     def autocomplete(
         self,
         query_terms: list[str],
-        depend_on_parameter_values: list[str],
+        depend_on_parameter_values: list[Any],
         context: PluginContext,
     ) -> list[Autocompletion]:
-        auth(depend_on_parameter_values[0], depend_on_parameter_values[1])
+        auth(depend_on_parameter_values[0], depend_on_parameter_values[1].decrypt())
         result = []
         if len(query_terms) != 0:
             datasets = search(query_terms=query_terms)
@@ -258,8 +261,7 @@ class KaggleImport(WorkflowPlugin):
     ) -> None:
         self.username = username
         self.api_key = api_key
-        if api.validate_dataset_string(dataset=kaggle_dataset):
-            raise ValueError("The specified dataset is not valid")
+        api.validate_dataset_string(dataset=kaggle_dataset)
         if self.validate_file_name(dataset=kaggle_dataset, file_name=file_name):
             raise ValueError(
                 "The specified file doesn't exists in the specified "
