@@ -4,6 +4,8 @@ import pytest
 from cmem_plugin_kaggle.kaggle_import import (
     KaggleImport,
     KaggleSearch,
+    DatasetFile,
+    auth,
     get_zip_file_path,
 )
 from cmem.cmempy.workspace.projects.project import make_new_project, delete_project
@@ -20,6 +22,7 @@ from tests.utils import (
     TestExecutionContext,
     TestSystemContext,
 )
+from cmem_plugin_base.dataintegration.types import Autocompletion
 
 PROJECT_NAME = "kaggle_test_project"
 DATASET_NAME = "annual"
@@ -31,23 +34,39 @@ KAGGLE_KEY = Password(encrypted_value=KAGGLE_CONFIG["key"], system=TestSystemCon
 
 
 @needs_kaggle
-def test_completion():
+def test_kaggle_search_completion():
     """test completion"""
     parameter = KaggleSearch()
+
+    # on empty query
     completion = parameter.autocomplete(
-        query_terms=[""],
-        depend_on_parameter_values=[KAGGLE_CONFIG["username"], KAGGLE_CONFIG["key"]],
+        query_terms=[],
+        depend_on_parameter_values=[KAGGLE_CONFIG["username"], KAGGLE_KEY],
         context=TestTaskContext(),
     )
+    print(completion)
     assert isinstance(completion, list)
+    assert len(completion) == 1
+    assert completion[0] == Autocompletion(
+        value="Message", label="Search for kaggle datasets"
+    )
 
-    parameter = KaggleSearch()
+    # on unmatch query
     completion = parameter.autocomplete(
         query_terms=["asdcjhasdcjasdc"],
-        depend_on_parameter_values=[KAGGLE_CONFIG["username"], KAGGLE_CONFIG["key"]],
+        depend_on_parameter_values=[KAGGLE_CONFIG["username"], KAGGLE_KEY],
         context=TestTaskContext(),
     )
-    assert isinstance(completion, list)
+    assert len(completion) == 0
+
+    # on match query
+    completion = parameter.autocomplete(
+        query_terms=[KAGGLE_DATASET],
+        depend_on_parameter_values=[KAGGLE_CONFIG["username"], KAGGLE_KEY],
+        context=TestTaskContext(),
+    )
+    assert len(completion) == 1
+    assert completion[0] == Autocompletion(value=KAGGLE_DATASET, label=KAGGLE_DATASET)
 
 
 @pytest.fixture(scope="module")
@@ -120,12 +139,53 @@ def test_failing_init():
             dataset=DATASET_NAME,
         )
 
-    # Invalid Dataset ID
-    # with pytest.raises(ValueError, match=r'() is not a valid task ID.$'):
-    #     KaggleImport(kaggle_dataset=KAGGLE_DATASET,
-    #                  file_name=RESOURCE_NAME,
-    #                  dataset='INVALID_DATASET_ID')
+    with pytest.raises(
+        ValueError,
+        match=r"Dataset must be specified in the form of \'{username}/{dataset-slug}",
+    ):
+        KaggleImport(
+            username=KAGGLE_CONFIG["username"],
+            api_key=KAGGLE_KEY,
+            kaggle_dataset="programmerrdaiteno",
+            file_name="INVALID_FILE_NAME",
+            dataset=DATASET_NAME,
+        )
 
 
-def test_dummy():
-    """dummy"""
+@needs_kaggle
+def test_dataset_file_completion():
+    """test completion"""
+    auth(KAGGLE_CONFIG["username"], KAGGLE_KEY.decrypt())
+    parameter = DatasetFile()
+
+    # on empty dataset
+    with pytest.raises(ValueError, match="Select dataset before choosing a file"):
+        parameter.autocomplete(
+            query_terms=["apple.csv"],
+            depend_on_parameter_values=[],
+            context=TestTaskContext(),
+        )
+
+    # on empty query
+    completion = parameter.autocomplete(
+        query_terms=[],
+        depend_on_parameter_values=[KAGGLE_DATASET],
+        context=TestTaskContext(),
+    )
+    print(completion)
+    assert isinstance(completion, list)
+    assert len(completion) == 2
+    assert completion == [
+        Autocompletion(value="annual.csv", label="annual.csv"),
+        Autocompletion(value="global-temp-annual.csv", label="global-temp-annual.csv"),
+    ]
+
+    # on query with dataset
+    completion = parameter.autocomplete(
+        query_terms=["apple.csv"],
+        depend_on_parameter_values=["vislupus/vegetable-and-fruit-prices"],
+        context=TestTaskContext(),
+    )
+    assert isinstance(completion, list)
+    assert len(completion) == 22
+    assert completion[0] == Autocompletion(value="apple.csv", label="apple.csv")
