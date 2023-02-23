@@ -208,13 +208,9 @@ class KaggleSearch(StringParameterType):
     plugin_id="cmem_plugin_kaggle",
     description="Import dataset resources from Kaggle.",
     documentation="""
-This example workflow operator downloads dataset from Kaggle library
-
-The dataset will be loaded from the URL specified:
-
-- `kaggle_dataset`: Name of the dataset to be needed.
-- `file_name`: Name of the file to be downloaded.
-- `dataset`: To which Dataset to write the response.
+This workflow operator downloads a dataset from the Kaggle library.
+To download datasets, you will need your Kaggle username and API Key,
+which you can obtain from the [Kaggle Public API](https://www.kaggle.com/docs/api).
 """,
     parameters=[
         PluginParameter(
