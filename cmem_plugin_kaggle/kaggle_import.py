@@ -129,9 +129,9 @@ def change_space_format(string: str) -> bool:
 class DatasetFileType(DatasetParameterType):
     """Dataset File Type"""
 
-    def __init__(self):
+    def __init__(self, dependent_params: list[str]):
         super().__init__()
-        self.autocompletion_depends_on_parameters = ["file_name"]
+        self.autocompletion_depends_on_parameters = dependent_params
 
     def autocomplete(
         self,
@@ -139,12 +139,15 @@ class DatasetFileType(DatasetParameterType):
         depend_on_parameter_values: list[Any],
         context: PluginContext,
     ) -> list[Autocompletion]:
-        if self.autocompletion_depends_on_parameters[0] == "file_name":
-            self.dataset_type = depend_on_parameter_values[0].split(".")[-1]
-            return super().autocomplete(  # type: ignore
+        try:
+            self.dataset_type = DATASET_TYPES[
+                depend_on_parameter_values[0].split(".")[-1]
+            ]
+        except KeyError:
+            self.dataset_type = ""
+        return super().autocomplete(  # type: ignore
                 query_terms, depend_on_parameter_values, context
             )
-        return [Autocompletion(value="", label="No Datasets Available")]
 
 
 class DatasetFile(StringParameterType):
@@ -269,7 +272,7 @@ which you can obtain from the [Kaggle Public API](https://www.kaggle.com/docs/ap
             name="dataset",
             label="Dataset",
             description="To which Dataset to write the response",
-            param_type=DatasetFileType(),
+            param_type=DatasetFileType(dependent_params=["file_name"]),
         ),
     ],
 )
