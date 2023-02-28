@@ -41,7 +41,7 @@ class TestUserContext(UserContext):
 
     def __init__(self):
         # get access token from default service account
-        access_token: str = f"{get_token()['access_token']}"
+        access_token: str = f"{get_token()['access_token']}"  # type: ignore
         self.token = lambda: access_token
 
 
@@ -60,9 +60,9 @@ class TestExecutionContext(ExecutionContext):
     __test__ = False
 
     def __init__(
-        self,
-        project_id: str = "dummyProject",
-        user: Optional[UserContext] = TestUserContext(),
+            self,
+            project_id: str = "dummyProject",
+            user: Optional[UserContext] = TestUserContext(),
     ):
         self.report = ReportContext()
         self.task = TestTaskContext(project_id=project_id)

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cmem-plugin-kaggle"
-version = "2.0.0"
+version = "2.0.1"
 license = "Apache-2.0"
 description = "Import dataset resources from Kaggle."
 authors = ["Ranga Reddy Nukala <sairangareddy22@gmail.com>"]
@@ -18,7 +18,7 @@ include = ["CHANGELOG.md"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-cmem-plugin-base = "^2.3.0rc5"
+cmem-plugin-base = "^3.0.0"
 kaggle = "^1.5.12"
 
 [tool.poetry.dev-dependencies]
