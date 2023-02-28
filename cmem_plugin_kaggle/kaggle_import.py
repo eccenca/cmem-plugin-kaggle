@@ -20,6 +20,15 @@ from cmem_plugin_base.dataintegration.utils import write_to_dataset
 
 api = KaggleApi()
 
+DATASET_TYPES = {
+    "csv": "csv",
+    "json": "json",
+    "xlsx": "excel",
+    "xml": "xml",
+    "zip": "multiCsv",
+    "txt": "text",
+}
+
 
 class KaggleDataset:
     """Kaggle Dataset Object for Internal Purpose"""
