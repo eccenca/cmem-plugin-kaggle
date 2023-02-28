@@ -13,6 +13,7 @@ from cmem_plugin_base.dataintegration.context import (
     ExecutionContext,
     ReportContext,
     SystemContext,
+    PluginContext,
 )
 
 needs_cmem: MarkDecorator = pytest.mark.skipif(
@@ -70,6 +71,10 @@ class TestExecutionContext(ExecutionContext):
 
 
 class TestSystemContext(SystemContext):
+    """dummy system context that can be used in tests"""
+
+    __test__ = False
+
     def __init__(self):
         self._version = "1.0.0"
         self._prefix = "encrypted_"
@@ -82,3 +87,14 @@ class TestSystemContext(SystemContext):
 
     def decrypt(self, value: str) -> str:
         return value.replace(self._prefix, "")
+
+
+class TestPluginContext(PluginContext):
+    """dummy test plugin context that can be used in tests"""
+
+    __test__ = False
+
+    def __init__(self, project_id: str = "dummyProject"):
+        self.system = TestSystemContext()
+        self.user = TestUserContext()
+        self.project_id = project_id
