@@ -5,6 +5,7 @@ from cmem_plugin_kaggle.kaggle_import import (
     KaggleImport,
     KaggleSearch,
     DatasetFile,
+    DatasetFileType,
     auth,
     get_zip_file_path,
 )
@@ -21,14 +22,15 @@ from tests.utils import (
     TestTaskContext,
     TestExecutionContext,
     TestSystemContext,
+    TestPluginContext,
 )
 from cmem_plugin_base.dataintegration.types import Autocompletion
 
 PROJECT_NAME = "kaggle_test_project"
-DATASET_NAME = "annual"
+DATASET_NAME = "test-dataset"
 DATASET_TYPE = "csv"
 RESOURCE_NAME = f"{DATASET_NAME}.{DATASET_TYPE}"
-KAGGLE_DATASET = "programmerrdai/global-temperature"
+KAGGLE_DATASET = "rangareddynukala/cmem-plugin-kaggle-test"
 KAGGLE_CONFIG = get_kaggle_config()
 KAGGLE_KEY = Password(encrypted_value=KAGGLE_CONFIG["key"], system=TestSystemContext())
 
@@ -69,7 +71,23 @@ def test_kaggle_search_completion():
     assert completion[0] == Autocompletion(value=KAGGLE_DATASET, label=KAGGLE_DATASET)
 
 
-@pytest.fixture(scope="module")
+@needs_kaggle
+def test_dataset_file_type_completion(project):
+    """test completion"""
+    auth(KAGGLE_CONFIG["username"], KAGGLE_KEY.decrypt())
+    parameter = DatasetFileType(dependent_params=["file_name"])
+
+    # on empty query
+    completion = parameter.autocomplete(
+        query_terms=["test-dataset"],
+        depend_on_parameter_values=["test-dataset.csv"],
+        context=TestPluginContext(project_id=PROJECT_NAME),
+    )
+    print(completion)
+    assert isinstance(completion, list)
+
+
+@pytest.fixture(scope="function")
 def project():
     """Provides the DI build project incl. assets."""
     make_new_project(PROJECT_NAME)
@@ -103,7 +121,7 @@ def test_execution(project):
         username=KAGGLE_CONFIG["username"],
         api_key=KAGGLE_KEY,
         kaggle_dataset=KAGGLE_DATASET,
-        file_name=RESOURCE_NAME,
+        file_name="test csv.csv",
         dataset=DATASET_NAME,
     ).execute(inputs=[], context=TestExecutionContext(project_id=PROJECT_NAME))
     assert (
@@ -174,11 +192,7 @@ def test_dataset_file_completion():
     )
     print(completion)
     assert isinstance(completion, list)
-    assert len(completion) == 2
-    assert completion == [
-        Autocompletion(value="annual.csv", label="annual.csv"),
-        Autocompletion(value="global-temp-annual.csv", label="global-temp-annual.csv"),
-    ]
+    assert len(completion) == 6
 
     # on query with dataset
     completion = parameter.autocomplete(
