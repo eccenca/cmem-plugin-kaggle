@@ -69,7 +69,7 @@ def unzip_file(file_path):
 
 
 def create_resource_from_file(
-        dataset_id: str, remote_file_name: str, context: ExecutionContext
+    dataset_id: str, remote_file_name: str, context: ExecutionContext
 ):
     """Create Resource"""
     with open(remote_file_name, "rb") as response_file:
@@ -122,17 +122,20 @@ class DatasetFileType(DatasetParameterType):
 
     def __init__(self):
         super().__init__()
-        self.autocompletion_depends_on_parameters = ['file_name']
+        self.autocompletion_depends_on_parameters = ["file_name"]
 
-    def autocomplete(self, query_terms: list[str],
-                     depend_on_parameter_values: list[Any],
-                     context: PluginContext) -> list[Autocompletion]:
+    def autocomplete(
+        self,
+        query_terms: list[str],
+        depend_on_parameter_values: list[Any],
+        context: PluginContext,
+    ) -> list[Autocompletion]:
         if self.autocompletion_depends_on_parameters[0] == "file_name":
             self.dataset_type = depend_on_parameter_values[0].split(".")[-1]
-            return super().autocomplete(query_terms,  # type: ignore
-                                        depend_on_parameter_values,
-                                        context)
-        return [Autocompletion(value='', label='No Datasets Available')]
+            return super().autocomplete(  # type: ignore
+                query_terms, depend_on_parameter_values, context
+            )
+        return [Autocompletion(value="", label="No Datasets Available")]
 
 
 class DatasetFile(StringParameterType):
@@ -146,10 +149,10 @@ class DatasetFile(StringParameterType):
     autocomplete_value_with_labels: bool = True
 
     def autocomplete(
-            self,
-            query_terms: list[str],
-            depend_on_parameter_values: list[Any],
-            context: PluginContext,
+        self,
+        query_terms: list[str],
+        depend_on_parameter_values: list[Any],
+        context: PluginContext,
     ) -> list[Autocompletion]:
         if not depend_on_parameter_values:
             raise ValueError("Select dataset before choosing a file")
@@ -194,10 +197,10 @@ class KaggleSearch(StringParameterType):
     autocomplete_value_with_labels: bool = True
 
     def autocomplete(
-            self,
-            query_terms: list[str],
-            depend_on_parameter_values: list[Any],
-            context: PluginContext,
+        self,
+        query_terms: list[str],
+        depend_on_parameter_values: list[Any],
+        context: PluginContext,
     ) -> list[Autocompletion]:
         auth(depend_on_parameter_values[0], depend_on_parameter_values[1].decrypt())
         result = []
@@ -266,12 +269,12 @@ class KaggleImport(WorkflowPlugin):
 
     # pylint: disable=too-many-arguments
     def __init__(
-            self,
-            username: str,
-            api_key: Password,
-            kaggle_dataset: str,
-            file_name: str,
-            dataset: str,
+        self,
+        username: str,
+        api_key: Password,
+        kaggle_dataset: str,
+        file_name: str,
+        dataset: str,
     ) -> None:
         self.username = username
         self.api_key = api_key
