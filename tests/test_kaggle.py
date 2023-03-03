@@ -203,3 +203,18 @@ def test_dataset_file_completion():
     assert isinstance(completion, list)
     assert len(completion) == 23
     assert completion[1] == Autocompletion(value="apple.csv", label="apple.csv")
+
+
+@needs_kaggle
+def test_single_file_zip(project):
+    """Test plugin execution"""
+    KaggleImport(
+        username=KAGGLE_CONFIG["username"],
+        api_key=KAGGLE_KEY,
+        kaggle_dataset='huascarmendez1/cord19csv',
+        file_name="pdf_comm_use.csv",
+        dataset=DATASET_NAME,
+    ).execute(inputs=[], context=TestExecutionContext(project_id=PROJECT_NAME))
+    assert (
+        resource_exist(project_name=PROJECT_NAME, resource_name=RESOURCE_NAME) is True
+    )
