@@ -5,6 +5,7 @@ import os
 import time
 from zipfile import ZipFile
 
+from kaggle.rest import ApiException
 from kaggle.api import KaggleApi
 from cmem_plugin_base.dataintegration.context import (
     ExecutionContext,
@@ -132,9 +133,11 @@ def auth(username: str, api_key: str):
 
 def search(query_terms: list[str]):
     """Kaggle Dataset Search"""
-
-    datasets = api.dataset_list(search=list_to_string(query_list=query_terms))
-    return datasets
+    try:
+        datasets = api.dataset_list(search=list_to_string(query_list=query_terms))
+        return datasets
+    except ApiException:
+        raise ValueError("Failed to authenticate with Kaggle API") from ApiException
 
 
 def list_files(dataset):
