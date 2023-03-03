@@ -201,5 +201,5 @@ def test_dataset_file_completion():
         context=TestTaskContext(),
     )
     assert isinstance(completion, list)
-    assert len(completion) == 22
-    assert completion[0] == Autocompletion(value="apple.csv", label="apple.csv")
+    assert len(completion) == 23
+    assert completion[1] == Autocompletion(value="apple.csv", label="apple.csv")

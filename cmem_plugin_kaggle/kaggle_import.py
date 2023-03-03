@@ -1,4 +1,5 @@
 """Kaggle Dataset workflow plugin module"""
+import tempfile
 from typing import Sequence, Tuple, Any
 import os
 import time
@@ -46,23 +47,49 @@ def get_slugs(dataset):
         dataset_urls = dataset.split("/")
         dataset_slugs = KaggleDataset(dataset_urls[0], dataset_urls[1])
         return dataset_slugs
-    return None
+    return []
 
 
-def find_file(dataset_id: str, remote_file_name: str, context: ExecutionContext):
+def find_file(
+    dataset_id: str, remote_file_name: str, path: str, context: ExecutionContext
+):
     """Check weather the file is downloaded or not"""
-    file_path = f"./{remote_file_name}"
-    if os.path.exists(file_path):
-        create_resource_from_file(
-            dataset_id=dataset_id, remote_file_name=remote_file_name, context=context
+    file_path = os.path.join(path, remote_file_name)
+    try:
+        if os.path.exists(file_path):
+            create_resource_from_file(
+                dataset_id=dataset_id, remote_file_name=file_path, context=context
+            )
+        elif os.path.exists(get_zip_file_path(file_path)):
+            unzip_file(get_zip_file_path(file_path))
+            find_file(
+                dataset_id=dataset_id,
+                remote_file_name=remote_file_name,
+                path=path,
+                context=context,
+            )
+        else:
+            raise FileNotFoundError
+    except FileNotFoundError:
+        error_ring = {
+            "file_path": f"{file_path}",
+            "path": f"{path}",
+            "remote_file_name": f"{remote_file_name}",
+            "dataset_id": f"{dataset_id}",
+            "os.path.exists(file_path)": f"{os.path.exists(file_path)}",
+        }
+        files = os.listdir(path)
+        for file in files:
+            error_ring["list_dir"] = os.path.join(path, file)
+        summary = list(zip(error_ring.keys(), error_ring.values()))
+        context.report.update(
+            ExecutionReport(
+                entity_count=0,
+                operation="write",
+                operation_desc="failed",
+                summary=summary,
+            )
         )
-    elif os.path.exists(get_zip_file_path(remote_file_name)):
-        unzip_file(get_zip_file_path(remote_file_name))
-        find_file(
-            dataset_id=dataset_id, remote_file_name=remote_file_name, context=context
-        )
-    else:
-        raise ValueError("FILE IS IN FOLDER")
 
 
 def get_zip_file_path(file_name) -> str:
@@ -73,7 +100,7 @@ def get_zip_file_path(file_name) -> str:
 def unzip_file(file_path):
     """Unzip the file"""
     with ZipFile(file_path, "r") as zip_file:
-        zip_file.extractall("./")
+        zip_file.extractall(os.path.dirname(file_path))
         zip_file.close()
 
 
@@ -146,8 +173,8 @@ class DatasetFileType(DatasetParameterType):
         except KeyError:
             self.dataset_type = ""
         return super().autocomplete(  # type: ignore
-                query_terms, depend_on_parameter_values, context
-            )
+            query_terms, depend_on_parameter_values, context
+        )
 
 
 class DatasetFile(StringParameterType):
@@ -170,31 +197,24 @@ class DatasetFile(StringParameterType):
             raise ValueError("Select dataset before choosing a file")
 
         result = []
-        if len(query_terms) != 0:
-            files = list_files(dataset=depend_on_parameter_values[0])
-            for file in files:
-                result.append(
-                    Autocompletion(
-                        value=f"{file}",
-                        label=f"{file}",
-                    )
-                )
-            result.sort(key=lambda x: x.label)  # type: ignore
-            return result
-
         files = list_files(dataset=depend_on_parameter_values[0])
-        for file in files:
+        count_csv = sum(1 for file in files if str(file).endswith(".csv"))
+        can_support_multi_csv = count_csv == len(files) > 1
+        if can_support_multi_csv:
+            slug = get_slugs(depend_on_parameter_values[0])
             result.append(
                 Autocompletion(
-                    value=f"{file}",
-                    label=f"{file}",
+                    value=f"{slug}.zip", label="Download all csv files as a Zip file"
                 )
             )
-        result.sort(key=lambda x: x.label)  # type: ignore
-        if len(result) == 0:
-            value = ""
-            label = "No files found for this dataset"
-            result.append(Autocompletion(value=value, label=f"{label}"))
+        for file in files:
+            result.append(Autocompletion(value=f"{file}", label=f"{file}"))
+        if len(result) != 0:
+            result.sort(key=lambda x: x.label)  # type: ignore
+        else:
+            result.append(
+                Autocompletion(value="", label="No files found for this dataset")
+            )
         return result
 
 
@@ -291,12 +311,13 @@ class KaggleImport(WorkflowPlugin):
         self.username = username
         self.api_key = api_key
         api.validate_dataset_string(dataset=kaggle_dataset)
-        if self.validate_file_name(dataset=kaggle_dataset, file_name=file_name):
-            raise ValueError(
-                "The specified file doesn't exists in the specified "
-                f"dataset and it must be from "
-                f"{list_files(kaggle_dataset)}"
-            )
+        if not file_name.endswith(".zip"):
+            if self.validate_file_name(dataset=kaggle_dataset, file_name=file_name):
+                raise ValueError(
+                    "The specified file doesn't exists in the specified "
+                    f"dataset and it must be from "
+                    f"{list_files(kaggle_dataset)}"
+                )
         self.kaggle_dataset = kaggle_dataset
         self.file_name = file_name
         self.dataset = dataset
@@ -315,11 +336,17 @@ class KaggleImport(WorkflowPlugin):
         if change_space_format(string=self.file_name):
             self.file_name = self.file_name.replace(" ", "%20")
 
-        self.download_files(dataset=self.kaggle_dataset, file_name=self.file_name)
-        time.sleep(1)
-        find_file(
-            dataset_id=dataset_id, remote_file_name=self.file_name, context=context
-        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            self.download_files(
+                dataset=self.kaggle_dataset, file_name=self.file_name, path=temp_dir
+            )
+            time.sleep(1)
+            find_file(
+                dataset_id=dataset_id,
+                remote_file_name=self.file_name,
+                path=temp_dir,
+                context=context,
+            )
 
         context.report.update(
             ExecutionReport(
@@ -340,7 +367,10 @@ class KaggleImport(WorkflowPlugin):
                 return False
         return True
 
-    def download_files(self, dataset, file_name):
+    def download_files(self, dataset, file_name, path):
         """Kaggle Single Dataset File Download"""
         auth(self.username, self.api_key.decrypt())
-        api.dataset_download_file(dataset=dataset, file_name=file_name, path="./")
+        if file_name.endswith(".zip"):
+            api.dataset_download_files(dataset=dataset, path=path)
+        else:
+            api.dataset_download_file(dataset=dataset, file_name=file_name, path=path)
