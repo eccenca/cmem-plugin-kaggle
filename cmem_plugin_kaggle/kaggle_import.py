@@ -54,14 +54,14 @@ def get_slugs(dataset):
 def find_file(
     dataset_id: str, remote_file_name: str, path: str, context: ExecutionContext
 ):
-    """Check weather the file is downloaded or not"""
+    """Check whether the file is downloaded or not"""
     file_path = os.path.join(path, remote_file_name)
     try:
-        if os.path.exists(file_path):
+        if os.path.isfile(file_path):
             create_resource_from_file(
                 dataset_id=dataset_id, remote_file_name=file_path, context=context
             )
-        elif os.path.exists(get_zip_file_path(file_path)):
+        elif os.path.isfile(get_zip_file_path(file_path)):
             unzip_file(get_zip_file_path(file_path))
             find_file(
                 dataset_id=dataset_id,
@@ -72,16 +72,18 @@ def find_file(
         else:
             raise FileNotFoundError
     except FileNotFoundError:
-        error_ring = {
-            "file_path": f"{file_path}",
-            "path": f"{path}",
-            "remote_file_name": f"{remote_file_name}",
-            "dataset_id": f"{dataset_id}",
-            "os.path.exists(file_path)": f"{os.path.exists(file_path)}",
-        }
         files = os.listdir(path)
-        for file in files:
-            error_ring["list_dir"] = os.path.join(path, file)
+        error_ring = {
+            "file_path": file_path,
+            "path": path,
+            "remote_file_name": remote_file_name,
+            "dataset_id": dataset_id,
+            "os.path.isfile(file_path)": os.path.isfile(file_path),
+            "os.path.isfile(get_zip_file_path(file_path))": os.path.isfile(
+                get_zip_file_path(file_path)
+            ),
+            "list_dir": [os.path.join(path, file) for file in files],
+        }
         summary = list(zip(error_ring.keys(), error_ring.values()))
         context.report.update(
             ExecutionReport(
