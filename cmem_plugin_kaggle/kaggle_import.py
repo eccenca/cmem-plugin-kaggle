@@ -237,9 +237,8 @@ class KaggleSearch(StringParameterType):
             result.sort(key=lambda x: x.label)  # type: ignore
             return result
         if len(query_terms) == 0:
-            value = "Message"
             label = "Search for kaggle datasets"
-            result.append(Autocompletion(value=value, label=f"{label}"))
+            result.append(Autocompletion(value="", label=f"{label}"))
         result.sort(key=lambda x: x.label)  # type: ignore
         return result
 
