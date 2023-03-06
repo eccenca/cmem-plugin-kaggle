@@ -41,17 +41,17 @@ class KaggleDataset:
         self.name = name
 
 
-def get_slugs(dataset):
+def get_slugs(dataset) -> KaggleDataset:
     """Dataset Slugs"""
     if "/" in dataset:
         api.validate_dataset_string(dataset)
         dataset_urls = dataset.split("/")
         dataset_slugs = KaggleDataset(dataset_urls[0], dataset_urls[1])
         return dataset_slugs
-    return []
+    return KaggleDataset(owner="", name="")
 
 
-def find_file(
+def upload_file(
     dataset_id: str, remote_file_name: str, path: str, context: ExecutionContext
 ):
     """Check whether the file is downloaded or not"""
@@ -63,7 +63,7 @@ def find_file(
             )
         elif os.path.isfile(get_zip_file_path(file_path)):
             unzip_file(get_zip_file_path(file_path))
-            find_file(
+            upload_file(
                 dataset_id=dataset_id,
                 remote_file_name=remote_file_name,
                 path=path,
@@ -73,18 +73,8 @@ def find_file(
             raise FileNotFoundError
     except FileNotFoundError:
         files = os.listdir(path)
-        error_ring = {
-            "file_path": file_path,
-            "path": path,
-            "remote_file_name": remote_file_name,
-            "dataset_id": dataset_id,
-            "os.path.isfile(file_path)": os.path.isfile(file_path),
-            "os.path.isfile(get_zip_file_path(file_path))": os.path.isfile(
-                get_zip_file_path(file_path)
-            ),
-            "list_dir": [os.path.join(path, file) for file in files],
-        }
-        summary = list(zip(error_ring.keys(), error_ring.values()))
+        paths = [os.path.join(path, file) for file in files]
+        summary = [("Files in the downloaded directory", list_to_string(paths))]
         context.report.update(
             ExecutionReport(
                 entity_count=0,
@@ -150,14 +140,6 @@ def list_files(dataset):
     return None
 
 
-def change_space_format(string: str) -> bool:
-    """Make changes"""
-    for element in string:
-        if element == " ":
-            return True
-    return False
-
-
 class DatasetFileType(DatasetParameterType):
     """Dataset File Type"""
 
@@ -209,7 +191,8 @@ class DatasetFile(StringParameterType):
             slug = get_slugs(depend_on_parameter_values[0])
             result.append(
                 Autocompletion(
-                    value=f"{slug}.zip", label="Download all csv files as a Zip file"
+                    value=f"{slug.name}.zip",
+                    label="Download all csv files as a Zip file",
                 )
             )
         for file in files:
@@ -338,29 +321,49 @@ class KaggleImport(WorkflowPlugin):
         self.log.info("Start loading kaggle dataset.")
         dataset_id = f"{context.task.project_id()}:{self.dataset}"
 
-        if change_space_format(string=self.file_name):
-            self.file_name = self.file_name.replace(" ", "%20")
+        dataset_file_name = self.get_downloadable_file_name()
 
         with tempfile.TemporaryDirectory() as temp_dir:
+            context.report.update(
+                ExecutionReport(
+                    operation="wait",
+                    operation_desc=f"{dataset_file_name} downloading",
+                )
+            )
             self.download_files(
-                dataset=self.kaggle_dataset, file_name=self.file_name, path=temp_dir
+                dataset=self.kaggle_dataset, file_name=dataset_file_name, path=temp_dir
             )
             time.sleep(1)
-            find_file(
+            upload_file(
                 dataset_id=dataset_id,
-                remote_file_name=self.file_name,
+                remote_file_name=dataset_file_name,
                 path=temp_dir,
                 context=context,
             )
+
+        summary.append(("Kaggle Dataset", self.kaggle_dataset))
+        summary.append(("File", dataset_file_name))
+        summary.append(("Dataset ID", dataset_id))
 
         context.report.update(
             ExecutionReport(
                 entity_count=1,
                 operation="write",
-                operation_desc="successfully downloaded",
+                operation_desc=f"{dataset_file_name} downloaded",
                 summary=summary,
                 warnings=warnings,
             )
+        )
+
+    def get_downloadable_file_name(self) -> str:
+        """Get the file name for the dataset"""
+        dataset_filename = ""
+        if " " in self.file_name:
+            dataset_filename = self.file_name.replace(" ", "%20")
+        return (
+            f"{get_slugs(self.kaggle_dataset).name}.zip"
+            if dataset_filename.endswith(".zip")
+            else dataset_filename
         )
 
     def validate_file_name(self, dataset: str, file_name: str) -> bool:

@@ -87,7 +87,7 @@ def test_dataset_file_type_completion(project):
     assert isinstance(completion, list)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def project():
     """Provides the DI build project incl. assets."""
     make_new_project(PROJECT_NAME)
@@ -126,6 +126,23 @@ def test_execution(project):
     ).execute(inputs=[], context=TestExecutionContext(project_id=PROJECT_NAME))
     assert (
         resource_exist(project_name=PROJECT_NAME, resource_name=RESOURCE_NAME) is True
+    )
+
+
+@needs_cmem
+@needs_kaggle
+def test_single_file_zip(project):
+    """Test plugin execution"""
+    _ = project
+    KaggleImport(
+        username=KAGGLE_CONFIG["username"],
+        api_key=KAGGLE_KEY,
+        kaggle_dataset="huascarmendez1/cord19csv",
+        file_name="pdf_comm_use.csv",
+        dataset=DATASET_NAME,
+    ).execute(inputs=[], context=TestExecutionContext(project_id=PROJECT_NAME))
+    assert (
+        resource_exist(project_name=PROJECT_NAME, resource_name=RESOURCE_NAME) is False
     )
 
 
@@ -203,18 +220,3 @@ def test_dataset_file_completion():
     assert isinstance(completion, list)
     assert len(completion) == 23
     assert completion[1] == Autocompletion(value="apple.csv", label="apple.csv")
-
-
-@needs_kaggle
-def test_single_file_zip(project):
-    """Test plugin execution"""
-    KaggleImport(
-        username=KAGGLE_CONFIG["username"],
-        api_key=KAGGLE_KEY,
-        kaggle_dataset='huascarmendez1/cord19csv',
-        file_name="pdf_comm_use.csv",
-        dataset=DATASET_NAME,
-    ).execute(inputs=[], context=TestExecutionContext(project_id=PROJECT_NAME))
-    assert (
-        resource_exist(project_name=PROJECT_NAME, resource_name=RESOURCE_NAME) is True
-    )
