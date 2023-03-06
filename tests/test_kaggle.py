@@ -1,20 +1,19 @@
 """Plugin tests."""
-import os
 import pytest
+from cmem.cmempy.workspace.projects.project import make_new_project, delete_project
+from cmem.cmempy.workspace.projects.datasets.dataset import (
+    make_new_dataset,
+)
+from cmem.cmempy.workspace.projects.resources.resource import resource_exist
+from cmem_plugin_base.dataintegration.parameter.password import Password
+from cmem_plugin_base.dataintegration.types import Autocompletion
 from cmem_plugin_kaggle.kaggle_import import (
     KaggleImport,
     KaggleSearch,
     DatasetFile,
     DatasetFileType,
     auth,
-    get_zip_file_path,
 )
-from cmem.cmempy.workspace.projects.project import make_new_project, delete_project
-from cmem.cmempy.workspace.projects.datasets.dataset import (
-    make_new_dataset,
-)
-from cmem_plugin_base.dataintegration.parameter.password import Password
-from cmem.cmempy.workspace.projects.resources.resource import resource_exist
 from tests.utils import (
     needs_cmem,
     needs_kaggle,
@@ -24,7 +23,6 @@ from tests.utils import (
     TestSystemContext,
     TestPluginContext,
 )
-from cmem_plugin_base.dataintegration.types import Autocompletion
 
 PROJECT_NAME = "kaggle_test_project"
 DATASET_NAME = "test-dataset"
@@ -49,9 +47,7 @@ def test_kaggle_search_completion():
     print(completion)
     assert isinstance(completion, list)
     assert len(completion) == 1
-    assert completion[0] == Autocompletion(
-        value="Message", label="Search for kaggle datasets"
-    )
+    assert completion[0] == Autocompletion(value="", label="Search for kaggle datasets")
 
     # on unmatch query
     completion = parameter.autocomplete(
@@ -74,6 +70,7 @@ def test_kaggle_search_completion():
 @needs_kaggle
 def test_dataset_file_type_completion(project):
     """test completion"""
+    _ = project
     auth(KAGGLE_CONFIG["username"], KAGGLE_KEY.decrypt())
     parameter = DatasetFileType(dependent_params=["file_name"])
 
@@ -87,8 +84,8 @@ def test_dataset_file_type_completion(project):
     assert isinstance(completion, list)
 
 
-@pytest.fixture()
-def project():
+@pytest.fixture(name="project")
+def _project():
     """Provides the DI build project incl. assets."""
     make_new_project(PROJECT_NAME)
     make_new_dataset(
@@ -100,23 +97,14 @@ def project():
     )
 
     yield None
-    delete_files()
     delete_project(PROJECT_NAME)
-
-
-def delete_files():
-    """Delete Downloaded Files on Test"""
-    file_path = f"./{RESOURCE_NAME}"
-    if os.path.exists(file_path):
-        os.remove(file_path)
-    if os.path.exists(get_zip_file_path(RESOURCE_NAME)):
-        os.remove(get_zip_file_path(RESOURCE_NAME))
 
 
 @needs_cmem
 @needs_kaggle
 def test_execution(project):
     """Test plugin execution"""
+    _ = project
     KaggleImport(
         username=KAGGLE_CONFIG["username"],
         api_key=KAGGLE_KEY,
