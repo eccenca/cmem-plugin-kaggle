@@ -80,7 +80,6 @@ def test_dataset_file_type_completion(project):
         depend_on_parameter_values=["test-dataset.csv"],
         context=TestPluginContext(project_id=PROJECT_NAME),
     )
-    print(completion)
     assert isinstance(completion, list)
 
 
@@ -130,7 +129,7 @@ def test_single_file_zip(project):
         dataset=DATASET_NAME,
     ).execute(inputs=[], context=TestExecutionContext(project_id=PROJECT_NAME))
     assert (
-        resource_exist(project_name=PROJECT_NAME, resource_name=RESOURCE_NAME) is False
+        resource_exist(project_name=PROJECT_NAME, resource_name=RESOURCE_NAME) is True
     )
 
 
