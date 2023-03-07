@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "cmem-plugin-kaggle"
-version = "2.0.1"
+version = "0.0.0"
 license = "Apache-2.0"
 description = "Import dataset resources from Kaggle."
 authors = ["Ranga Reddy Nukala <sairangareddy22@gmail.com>"]
@@ -19,7 +19,7 @@ include = ["CHANGELOG.md"]
 [tool.poetry.dependencies]
 python = "^3.9"
 cmem-plugin-base = "^3.0.0"
-kaggle = "^1.5.12"
+kaggle = "^1.5.13"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.0"
@@ -42,7 +42,7 @@ requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
 build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.poetry-dynamic-versioning]
-enable = false
+enable = true
 vcs = "git"
 dirty = true
 
