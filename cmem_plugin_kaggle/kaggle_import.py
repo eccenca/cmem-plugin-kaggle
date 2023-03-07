@@ -357,13 +357,15 @@ class KaggleImport(WorkflowPlugin):
     def get_downloadable_file_name(self) -> str:
         """Get the file name for the dataset"""
         dataset_filename = ""
-        if " " in self.file_name:
+        if "" in self.file_name:
             dataset_filename = self.file_name.replace(" ", "%20")
-        return (
-            f"{get_slugs(self.kaggle_dataset).name}.zip"
-            if dataset_filename.endswith(".zip")
-            else dataset_filename
-        )
+
+        if "." in dataset_filename:
+            file_type = dataset_filename.split(".")[-1]
+            if file_type in DATASET_TYPES:
+                return dataset_filename
+
+        return f"{get_slugs(self.kaggle_dataset).name}.zip"
 
     def validate_file_name(self, dataset: str, file_name: str) -> bool:
         """Validate File Exists"""
