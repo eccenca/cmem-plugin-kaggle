@@ -21,8 +21,7 @@ needs_cmem: MarkDecorator = pytest.mark.skipif(
 )
 
 needs_kaggle: MarkDecorator = pytest.mark.skipif(
-    "KAGGLE_USERNAME" not in os.environ,
-    "KAGGLE_KEY" not in os.environ,
+    "KAGGLE_USERNAME" not in os.environ or "KAGGLE_KEY" not in os.environ,
     reason="Needs Kaggle API configuration",
 )
 
