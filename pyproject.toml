@@ -3,16 +3,19 @@ name = "cmem-plugin-kaggle"
 version = "0.0.0"
 license = "Apache-2.0"
 description = "Import dataset resources from Kaggle."
-authors = ["Ranga Reddy Nukala <sairangareddy22@gmail.com>"]
+authors = ["eccenca GmbH <cmempy-developer@eccenca.com>"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Plugins",
-    "Topic :: Software Development :: Libraries :: Python Modules"
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: Apache Software License",
 ]
 readme = "README-public.md"
 keywords = [
-    "eccenca Corporate Memory", "plugin"
+    "eccenca Corporate Memory", "plugin", "kaggle", "dataset"
 ]
+homepage = "https://github.com/eccenca/cmem-plugin-kaggle"
 include = ["CHANGELOG.md"]
 
 

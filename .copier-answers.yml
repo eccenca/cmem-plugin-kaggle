@@ -1,9 +1,9 @@
 # Changes here will be overwritten by Copier
 _commit: v3.6.0
 _src_path: gh:eccenca/cmem-plugin-template
-author_mail: sairangareddy22@gmail.com
-author_name: Ranga Reddy Nukala
-github_page: ''
+author_mail: cmempy-developer@eccenca.com
+author_name: eccenca GmbH
+github_page: 'https://github.com/eccenca/cmem-plugin-kaggle/'
 project_description: Import dataset resources from Kaggle.
 project_slug: kaggle
 pypi: false

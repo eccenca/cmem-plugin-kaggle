@@ -2,7 +2,8 @@
 
 Import dataset resources from Kaggle.
 
-[![eccenca Corporate Memory](https://img.shields.io/badge/eccenca-Corporate%20Memory-orange)](https://documentation.eccenca.com)   
+[![eccenca Corporate Memory](https://img.shields.io/badge/eccenca-Corporate%20Memory-orange)](https://documentation.eccenca.com) [![workflow](https://github.com/eccenca/cmem-plugin-kaggle/actions/workflows/check.yml/badge.svg)](https://github.com/eccenca/cmem-plugin-kaggle/actions)  
+   
 
 ## Development
 
