@@ -1,6 +1,6 @@
 # cmem-plugin-kaggle
 
-Import dataset resources from Kaggle.
+Import dataset resources from [Kaggle](https://www.kaggle.com/).
 
 This is a plugin for [eccenca](https://eccenca.com) [Corporate Memory](https://documentation.eccenca.com).
 

@@ -6,5 +6,5 @@ author_name: eccenca GmbH
 github_page: 'https://github.com/eccenca/cmem-plugin-kaggle/'
 project_description: Import dataset resources from Kaggle.
 project_slug: kaggle
-pypi: false
+pypi: https://pypi.org/project/cmem-plugin-kaggle/
 
