@@ -2,8 +2,7 @@
 
 Import dataset resources from [Kaggle](https://www.kaggle.com/).
 
-[![eccenca Corporate Memory](https://img.shields.io/badge/eccenca-Corporate%20Memory-orange)](https://documentation.eccenca.com) [![workflow](https://github.com/eccenca/cmem-plugin-kaggle/actions/workflows/check.yml/badge.svg)](https://github.com/eccenca/cmem-plugin-kaggle/actions) [![PyPI](https://img.shields.io/pypi/v/cmem-plugin-kaggle)](https://pypi.org/project/cmem-plugin-kaggle/)
-   
+[![eccenca Corporate Memory](https://img.shields.io/badge/eccenca-Corporate%20Memory-orange)](https://documentation.eccenca.com) [![workflow](https://github.com/eccenca/cmem-plugin-kaggle//actions/workflows/check.yml/badge.svg)](https://github.com/eccenca/cmem-plugin-kaggle//actions) [![pypi version](https://img.shields.io/pypi/v/cmem-plugin-kaggle)](https://pypi.org/project/kaggle) [![license](https://img.shields.io/pypi/l/cmem-plugin-kaggle)](https://pypi.org/project/cmem-plugin-kaggle)
 
 ## Development
 
