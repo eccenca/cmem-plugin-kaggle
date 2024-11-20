@@ -1,5 +1,7 @@
 """Plugin tests."""
 
+from dataclasses import dataclass
+
 import pytest
 from cmem.cmempy.workspace.projects.datasets.dataset import (
     make_new_dataset,
@@ -33,6 +35,31 @@ RESOURCE_NAME = f"{DATASET_NAME}.{DATASET_TYPE}"
 KAGGLE_DATASET = "rangareddynukala/cmem-plugin-kaggle-test"
 KAGGLE_CONFIG = get_kaggle_config()
 KAGGLE_KEY = Password(encrypted_value=KAGGLE_CONFIG["key"], system=TestSystemContext())
+
+
+@dataclass
+class ProjectFixtureData:
+    """Project fixture data"""
+
+    project: str
+    dataset: str
+    resource: str
+
+
+@pytest.fixture(name="project")
+def _project() -> ProjectFixtureData:
+    """Provide the DI project incl. assets."""
+    make_new_project(PROJECT_NAME)
+    make_new_dataset(
+        project_name=PROJECT_NAME,
+        dataset_name=DATASET_NAME,
+        dataset_type="csv",
+        parameters={"file": RESOURCE_NAME},
+        autoconfigure=False,
+    )
+
+    yield ProjectFixtureData(PROJECT_NAME, DATASET_NAME, RESOURCE_NAME)
+    delete_project(PROJECT_NAME)
 
 
 @needs_kaggle
@@ -69,7 +96,7 @@ def test_kaggle_search_completion() -> None:
 
 
 @needs_kaggle
-def test_dataset_file_type_completion(project) -> None:
+def test_dataset_file_type_completion(project: ProjectFixtureData) -> None:
     """Test completion"""
     _ = project
     auth(KAGGLE_CONFIG["username"], KAGGLE_KEY.decrypt())
@@ -84,25 +111,9 @@ def test_dataset_file_type_completion(project) -> None:
     assert isinstance(completion, list)
 
 
-@pytest.fixture(name="project")
-def _project():
-    """Provides the DI build project incl. assets."""
-    make_new_project(PROJECT_NAME)
-    make_new_dataset(
-        project_name=PROJECT_NAME,
-        dataset_name=DATASET_NAME,
-        dataset_type="csv",
-        parameters={"file": RESOURCE_NAME},
-        autoconfigure=False,
-    )
-
-    yield None
-    delete_project(PROJECT_NAME)
-
-
 @needs_cmem
 @needs_kaggle
-def test_execution(project) -> None:
+def test_execution(project: ProjectFixtureData) -> None:
     """Test plugin execution"""
     _ = project
     KaggleImport(
@@ -117,7 +128,7 @@ def test_execution(project) -> None:
 
 @needs_cmem
 @needs_kaggle
-def test_single_file_zip(project) -> None:
+def test_single_file_zip(project: ProjectFixtureData) -> None:
     """Test plugin execution"""
     _ = project
     KaggleImport(
@@ -191,7 +202,7 @@ def test_dataset_file_completion() -> None:
         context=TestTaskContext(),
     )
     assert isinstance(completion, list)
-    assert len(completion) == 6
+    assert len(completion) == 6  # noqa: PLR2004
 
     # on query with dataset
     completion = parameter.autocomplete(
@@ -200,5 +211,5 @@ def test_dataset_file_completion() -> None:
         context=TestTaskContext(),
     )
     assert isinstance(completion, list)
-    assert len(completion) == 23
+    assert len(completion) == 23  # noqa: PLR2004
     assert completion[1] == Autocompletion(value="apple.csv", label="apple.csv")

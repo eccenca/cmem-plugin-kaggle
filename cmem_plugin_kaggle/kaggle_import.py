@@ -52,7 +52,9 @@ def get_slugs(dataset) -> KaggleDataset:
     return KaggleDataset(owner="", name="")
 
 
-def upload_file(dataset_id: str, remote_file_name: str, path: str, context: ExecutionContext) -> None:
+def upload_file(
+    dataset_id: str, remote_file_name: str, path: str, context: ExecutionContext
+) -> None:
     """Check whether the file is downloaded or not"""
     file_path = os.path.join(path, remote_file_name)
     try:
@@ -96,7 +98,9 @@ def unzip_file(file_path) -> None:
         zip_file.close()
 
 
-def create_resource_from_file(dataset_id: str, remote_file_name: str, context: ExecutionContext) -> None:
+def create_resource_from_file(
+    dataset_id: str, remote_file_name: str, context: ExecutionContext
+) -> None:
     """Create Resource"""
     with open(remote_file_name, "rb") as response_file:
         write_to_dataset(dataset_id=dataset_id, file_resource=response_file, context=context.user)
