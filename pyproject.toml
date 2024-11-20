@@ -21,7 +21,7 @@ include = ["CHANGELOG.md"]
 
 [tool.poetry.dependencies]# if you need to change python version here, change it also in .python-version
 python = "^3.11"
-kaggle = "^1.5.13"
+kaggle = "^1.6.17"
 
 [tool.poetry.dependencies.cmem-plugin-base]
 version = "^4.7.0"
