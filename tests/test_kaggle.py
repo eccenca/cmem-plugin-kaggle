@@ -1,27 +1,29 @@
 """Plugin tests."""
+
 import pytest
-from cmem.cmempy.workspace.projects.project import make_new_project, delete_project
 from cmem.cmempy.workspace.projects.datasets.dataset import (
     make_new_dataset,
 )
+from cmem.cmempy.workspace.projects.project import delete_project, make_new_project
 from cmem.cmempy.workspace.projects.resources.resource import resource_exist
 from cmem_plugin_base.dataintegration.parameter.password import Password
 from cmem_plugin_base.dataintegration.types import Autocompletion
+
 from cmem_plugin_kaggle.kaggle_import import (
-    KaggleImport,
-    KaggleSearch,
     DatasetFile,
     DatasetFileType,
+    KaggleImport,
+    KaggleSearch,
     auth,
 )
 from tests.utils import (
+    TestExecutionContext,
+    TestPluginContext,
+    TestSystemContext,
+    TestTaskContext,
+    get_kaggle_config,
     needs_cmem,
     needs_kaggle,
-    get_kaggle_config,
-    TestTaskContext,
-    TestExecutionContext,
-    TestSystemContext,
-    TestPluginContext,
 )
 
 PROJECT_NAME = "kaggle_test_project"
@@ -35,7 +37,7 @@ KAGGLE_KEY = Password(encrypted_value=KAGGLE_CONFIG["key"], system=TestSystemCon
 
 @needs_kaggle
 def test_kaggle_search_completion():
-    """test completion"""
+    """Test completion"""
     parameter = KaggleSearch()
 
     # on empty query
@@ -69,7 +71,7 @@ def test_kaggle_search_completion():
 
 @needs_kaggle
 def test_dataset_file_type_completion(project):
-    """test completion"""
+    """Test completion"""
     _ = project
     auth(KAGGLE_CONFIG["username"], KAGGLE_KEY.decrypt())
     parameter = DatasetFileType(dependent_params=["file_name"])
@@ -111,9 +113,7 @@ def test_execution(project):
         file_name="test csv.csv",
         dataset=DATASET_NAME,
     ).execute(inputs=[], context=TestExecutionContext(project_id=PROJECT_NAME))
-    assert (
-        resource_exist(project_name=PROJECT_NAME, resource_name=RESOURCE_NAME) is True
-    )
+    assert resource_exist(project_name=PROJECT_NAME, resource_name=RESOURCE_NAME) is True
 
 
 @needs_cmem
@@ -128,15 +128,12 @@ def test_single_file_zip(project):
         file_name="pdf_comm_use.csv",
         dataset=DATASET_NAME,
     ).execute(inputs=[], context=TestExecutionContext(project_id=PROJECT_NAME))
-    assert (
-        resource_exist(project_name=PROJECT_NAME, resource_name=RESOURCE_NAME) is True
-    )
+    assert resource_exist(project_name=PROJECT_NAME, resource_name=RESOURCE_NAME) is True
 
 
 @needs_kaggle
 def test_failing_init():
     """Test RandomValues plugin."""
-
     # Invalid Kaggle Dataset Slug
     with pytest.raises(ValueError, match=r".*'\{username}\/{dataset-slug\}'"):
         KaggleImport(
@@ -176,7 +173,7 @@ def test_failing_init():
 
 @needs_kaggle
 def test_dataset_file_completion():
-    """test completion"""
+    """Test completion"""
     auth(KAGGLE_CONFIG["username"], KAGGLE_KEY.decrypt())
     parameter = DatasetFile()
 

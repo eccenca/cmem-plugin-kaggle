@@ -37,7 +37,7 @@ DATASET_TYPES = {
 class KaggleDataset:
     """Kaggle Dataset Object for Internal Purpose"""
 
-    def __init__(self, owner:str, name:str):
+    def __init__(self, owner: str, name: str):
         """Constructor"""
         self.owner = owner
         self.name = name
