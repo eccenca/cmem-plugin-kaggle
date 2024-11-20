@@ -48,12 +48,11 @@ def get_slugs(dataset) -> KaggleDataset:
     if "/" in dataset:
         api.validate_dataset_string(dataset)
         dataset_urls = dataset.split("/")
-        dataset_slugs = KaggleDataset(dataset_urls[0], dataset_urls[1])
-        return dataset_slugs
+        return KaggleDataset(dataset_urls[0], dataset_urls[1])
     return KaggleDataset(owner="", name="")
 
 
-def upload_file(dataset_id: str, remote_file_name: str, path: str, context: ExecutionContext):
+def upload_file(dataset_id: str, remote_file_name: str, path: str, context: ExecutionContext) -> None:
     """Check whether the file is downloaded or not"""
     file_path = os.path.join(path, remote_file_name)
     try:
@@ -90,14 +89,14 @@ def get_zip_file_path(file_name) -> str:
     return f"{file_name}.zip"
 
 
-def unzip_file(file_path):
+def unzip_file(file_path) -> None:
     """Unzip the file"""
     with ZipFile(file_path, "r") as zip_file:
         zip_file.extractall(os.path.dirname(file_path))
         zip_file.close()
 
 
-def create_resource_from_file(dataset_id: str, remote_file_name: str, context: ExecutionContext):
+def create_resource_from_file(dataset_id: str, remote_file_name: str, context: ExecutionContext) -> None:
     """Create Resource"""
     with open(remote_file_name, "rb") as response_file:
         write_to_dataset(dataset_id=dataset_id, file_resource=response_file, context=context.user)
@@ -109,7 +108,7 @@ def list_to_string(query_list: list[str]):
     return string_join.join(query_list)
 
 
-def auth(username: str, api_key: str):
+def auth(username: str, api_key: str) -> None:
     """Kaggle Authenticate"""
     # Set environment variables
     os.environ["KAGGLE_USERNAME"] = username
@@ -120,11 +119,7 @@ def auth(username: str, api_key: str):
 def search(query: str):
     """Kaggle Dataset Search"""
     try:
-        if query:
-            datasets = api.dataset_list(search=query)
-        else:
-            datasets = api.dataset_list()
-        return datasets
+        return api.dataset_list(search=query) if query else api.dataset_list()
     except ApiException:
         raise ValueError("Failed to authenticate with Kaggle API") from ApiException
 
@@ -357,12 +352,9 @@ class KaggleImport(WorkflowPlugin):
         """Validate File Exists"""
         auth(self.username, self.api_key.decrypt())
         files = list_files(dataset=dataset)
-        for file in files:
-            if str(file.name).lower() == file_name.lower():
-                return False
-        return True
+        return all(str(file.name).lower() != file_name.lower() for file in files)
 
-    def download_files(self, dataset, file_name, path):
+    def download_files(self, dataset, file_name, path) -> None:
         """Kaggle Single Dataset File Download"""
         auth(self.username, self.api_key.decrypt())
         if file_name.endswith(".zip"):

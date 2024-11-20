@@ -36,7 +36,7 @@ KAGGLE_KEY = Password(encrypted_value=KAGGLE_CONFIG["key"], system=TestSystemCon
 
 
 @needs_kaggle
-def test_kaggle_search_completion():
+def test_kaggle_search_completion() -> None:
     """Test completion"""
     parameter = KaggleSearch()
 
@@ -46,7 +46,6 @@ def test_kaggle_search_completion():
         depend_on_parameter_values=[KAGGLE_CONFIG["username"], KAGGLE_KEY],
         context=TestTaskContext(),
     )
-    print(completion)
     assert isinstance(completion, list)
     assert len(completion) == 1
     assert completion[0] == Autocompletion(value="", label="Search for kaggle datasets")
@@ -70,7 +69,7 @@ def test_kaggle_search_completion():
 
 
 @needs_kaggle
-def test_dataset_file_type_completion(project):
+def test_dataset_file_type_completion(project) -> None:
     """Test completion"""
     _ = project
     auth(KAGGLE_CONFIG["username"], KAGGLE_KEY.decrypt())
@@ -103,7 +102,7 @@ def _project():
 
 @needs_cmem
 @needs_kaggle
-def test_execution(project):
+def test_execution(project) -> None:
     """Test plugin execution"""
     _ = project
     KaggleImport(
@@ -118,7 +117,7 @@ def test_execution(project):
 
 @needs_cmem
 @needs_kaggle
-def test_single_file_zip(project):
+def test_single_file_zip(project) -> None:
     """Test plugin execution"""
     _ = project
     KaggleImport(
@@ -132,7 +131,7 @@ def test_single_file_zip(project):
 
 
 @needs_kaggle
-def test_failing_init():
+def test_failing_init() -> None:
     """Test RandomValues plugin."""
     # Invalid Kaggle Dataset Slug
     with pytest.raises(ValueError, match=r".*'\{username}\/{dataset-slug\}'"):
@@ -172,7 +171,7 @@ def test_failing_init():
 
 
 @needs_kaggle
-def test_dataset_file_completion():
+def test_dataset_file_completion() -> None:
     """Test completion"""
     auth(KAGGLE_CONFIG["username"], KAGGLE_KEY.decrypt())
     parameter = DatasetFile()
@@ -191,7 +190,6 @@ def test_dataset_file_completion():
         depend_on_parameter_values=[KAGGLE_DATASET],
         context=TestTaskContext(),
     )
-    print(completion)
     assert isinstance(completion, list)
     assert len(completion) == 6
 
