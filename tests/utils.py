@@ -1,48 +1,56 @@
-"""Testing utilities."""
+"""Testing utilities.
+
+Remove this and other example files after bootstrapping your project.
+"""
+
 import os
-from typing import Optional
+from typing import ClassVar
 
 import pytest
 
 # check for cmem environment and skip if not present
-from _pytest.mark import MarkDecorator
 from cmem.cmempy.api import get_token
+from cmem.cmempy.config import get_oauth_default_credentials
 from cmem_plugin_base.dataintegration.context import (
-    UserContext,
-    TaskContext,
     ExecutionContext,
-    ReportContext,
-    SystemContext,
     PluginContext,
+    ReportContext,
+    TaskContext,
+    UserContext,
 )
 
-needs_cmem: MarkDecorator = pytest.mark.skipif(
-    "CMEM_BASE_URI" not in os.environ, reason="Needs CMEM configuration"
+needs_cmem = pytest.mark.skipif(
+    os.environ.get("CMEM_BASE_URI", "") == "", reason="Needs CMEM configuration"
 )
-
-needs_kaggle: MarkDecorator = pytest.mark.skipif(
-    "KAGGLE_USERNAME" not in os.environ or "KAGGLE_KEY" not in os.environ,
-    reason="Needs Kaggle API configuration",
-)
-
-
-def get_kaggle_config():
-    """To get the kaggle configuration from environment variables"""
-    return {
-        "username": os.environ.get("KAGGLE_USERNAME", ""),
-        "key": os.environ.get("KAGGLE_KEY", ""),
-    }
 
 
 class TestUserContext(UserContext):
     """dummy user context that can be used in tests"""
 
     __test__ = False
+    default_credential: ClassVar[dict] = {}
 
     def __init__(self):
         # get access token from default service account
-        access_token: str = f"{get_token()['access_token']}"  # type: ignore
+        if not TestUserContext.default_credential:
+            TestUserContext.default_credential = get_oauth_default_credentials()
+        access_token = get_token(_oauth_credentials=TestUserContext.default_credential)[
+            "access_token"
+        ]
         self.token = lambda: access_token
+
+
+class TestPluginContext(PluginContext):
+    """dummy plugin context that can be used in tests"""
+
+    __test__ = False
+
+    def __init__(
+        self,
+        project_id: str = "dummyProject",
+    ):
+        self.project_id = project_id
+        self.user = TestUserContext()
 
 
 class TestTaskContext(TaskContext):
@@ -50,8 +58,9 @@ class TestTaskContext(TaskContext):
 
     __test__ = False
 
-    def __init__(self, project_id: str = "dummyProject"):
+    def __init__(self, project_id: str = "dummyProject", task_id: str = "dummyTask"):
         self.project_id = lambda: project_id
+        self.task_id = lambda: task_id
 
 
 class TestExecutionContext(ExecutionContext):
@@ -59,41 +68,7 @@ class TestExecutionContext(ExecutionContext):
 
     __test__ = False
 
-    def __init__(
-        self,
-        project_id: str = "dummyProject",
-        user: Optional[UserContext] = TestUserContext(),
-    ):
+    def __init__(self, project_id: str = "dummyProject", task_id: str = "dummyTask"):
         self.report = ReportContext()
-        self.task = TestTaskContext(project_id=project_id)
-        self.user = user
-
-
-class TestSystemContext(SystemContext):
-    """dummy system context that can be used in tests"""
-
-    __test__ = False
-
-    def __init__(self):
-        self._version = "1.0.0"
-        self._prefix = "encrypted_"
-
-    def di_version(self) -> str:
-        return f"{self._version}"
-
-    def encrypt(self, value: str) -> str:
-        return f"{self._prefix + value}"
-
-    def decrypt(self, value: str) -> str:
-        return value.replace(self._prefix, "")
-
-
-class TestPluginContext(PluginContext):
-    """dummy test plugin context that can be used in tests"""
-
-    __test__ = False
-
-    def __init__(self, project_id: str = "dummyProject"):
-        self.system = TestSystemContext()
+        self.task = TestTaskContext(project_id=project_id, task_id=task_id)
         self.user = TestUserContext()
-        self.project_id = project_id
