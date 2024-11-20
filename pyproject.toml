@@ -21,8 +21,8 @@ include = ["CHANGELOG.md"]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-cmem-plugin-base = "^4.0.0"
-kaggle = "^1.5.13"
+cmem-plugin-base = "^4.7.0"
+kaggle = "^1.6.17"
 
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.7.5"
