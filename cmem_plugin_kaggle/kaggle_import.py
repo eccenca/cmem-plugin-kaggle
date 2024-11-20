@@ -4,7 +4,9 @@ import os
 import tempfile
 import time
 from collections.abc import Sequence
-from typing import Any
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, ClassVar
 from zipfile import ZipFile
 
 from cmem_plugin_base.dataintegration.context import (
@@ -20,6 +22,7 @@ from cmem_plugin_base.dataintegration.plugins import WorkflowPlugin
 from cmem_plugin_base.dataintegration.types import Autocompletion, StringParameterType
 from cmem_plugin_base.dataintegration.utils import write_to_dataset
 from kaggle.api import KaggleApi
+from kaggle.models.kaggle_models_extended import Dataset, File
 from kaggle.rest import ApiException
 
 api = KaggleApi()
@@ -34,35 +37,34 @@ DATASET_TYPES = {
 }
 
 
+@dataclass
 class KaggleDataset:
     """Kaggle Dataset Object for Internal Purpose"""
 
-    def __init__(self, owner, name):
-        """Constructor"""
-        self.owner = owner
-        self.name = name
+    owner: str
+    name: str
 
 
-def get_slugs(dataset) -> KaggleDataset:
+def get_slugs(dataset: str) -> KaggleDataset:
     """Dataset Slugs"""
     if "/" in dataset:
         api.validate_dataset_string(dataset)
         dataset_urls = dataset.split("/")
         return KaggleDataset(dataset_urls[0], dataset_urls[1])
-    return KaggleDataset(owner="", name="")
+    raise ValueError("Not a valid Kaggle Dataset name")
 
 
 def upload_file(
     dataset_id: str, remote_file_name: str, path: str, context: ExecutionContext
 ) -> None:
     """Check whether the file is downloaded or not"""
-    file_path = os.path.join(path, remote_file_name)
+    file_path = Path(path) / remote_file_name
     try:
-        if os.path.isfile(file_path):
+        if file_path.is_file():
             create_resource_from_file(
                 dataset_id=dataset_id, remote_file_name=file_path, context=context
             )
-        elif os.path.isfile(get_zip_file_path(file_path)):
+        elif Path(get_zip_file_path(file_path)).is_file():
             unzip_file(get_zip_file_path(file_path))
             upload_file(
                 dataset_id=dataset_id,
@@ -71,10 +73,10 @@ def upload_file(
                 context=context,
             )
         else:
-            raise FileNotFoundError
+            raise FileNotFoundError  # noqa: TRY301
     except FileNotFoundError:
         files = os.listdir(path)
-        paths = [os.path.join(path, file) for file in files]
+        paths = [str(Path(path) / file) for file in files]
         summary = [("Files in the downloaded directory", list_to_string(paths))]
         context.report.update(
             ExecutionReport(
@@ -86,28 +88,28 @@ def upload_file(
         )
 
 
-def get_zip_file_path(file_name) -> str:
-    """Returns the zip of a file name"""
-    return f"{file_name}.zip"
+def get_zip_file_path(file_name: Path) -> str:
+    """Return the zip of a file name"""
+    return f"{file_name!s}.zip"
 
 
-def unzip_file(file_path) -> None:
+def unzip_file(file_path: str) -> None:
     """Unzip the file"""
     with ZipFile(file_path, "r") as zip_file:
-        zip_file.extractall(os.path.dirname(file_path))
+        zip_file.extractall(Path(file_path).parent)
         zip_file.close()
 
 
 def create_resource_from_file(
-    dataset_id: str, remote_file_name: str, context: ExecutionContext
+    dataset_id: str, remote_file_name: Path, context: ExecutionContext
 ) -> None:
     """Create Resource"""
-    with open(remote_file_name, "rb") as response_file:
+    with Path(remote_file_name).open("rb") as response_file:
         write_to_dataset(dataset_id=dataset_id, file_resource=response_file, context=context.user)
 
 
-def list_to_string(query_list: list[str]):
-    """Converts each query term to a single search term"""
+def list_to_string(query_list: list[str]) -> str:
+    """Convert each query term to a single search term"""
     string_join = ""
     return string_join.join(query_list)
 
@@ -120,20 +122,17 @@ def auth(username: str, api_key: str) -> None:
     api.authenticate()
 
 
-def search(query: str):
+def search(query: str) -> list[Dataset]:
     """Kaggle Dataset Search"""
     try:
-        return api.dataset_list(search=query) if query else api.dataset_list()
+        return api.dataset_list(search=query) if query else api.dataset_list()  # type: ignore[no-any-return]
     except ApiException:
         raise ValueError("Failed to authenticate with Kaggle API") from ApiException
 
 
-def list_files(dataset):
+def list_files(dataset: str) -> list[File]:
     """List Dataset Files"""
-    files = api.dataset_list_files(dataset).files
-    if len(files) != 0:
-        return files
-    return None
+    return api.dataset_list_files(dataset).files  # type: ignore[no-any-return]
 
 
 class DatasetFileType(DatasetParameterType):
@@ -149,19 +148,19 @@ class DatasetFileType(DatasetParameterType):
         depend_on_parameter_values: list[Any],
         context: PluginContext,
     ) -> list[Autocompletion]:
+        """Return all results that match ALL provided query terms."""
+        _ = context
         try:
             self.dataset_type = DATASET_TYPES[depend_on_parameter_values[0].split(".")[-1]]
         except KeyError:
             self.dataset_type = ""
-        return super().autocomplete(  # type: ignore
-            query_terms, depend_on_parameter_values, context
-        )
+        return super().autocomplete(query_terms, depend_on_parameter_values, context)  # type: ignore[no-any-return]
 
 
 class DatasetFile(StringParameterType):
     """Kaggle Dataset File Autocomplete"""
 
-    autocompletion_depends_on_parameters: list[str] = ["kaggle_dataset"]
+    autocompletion_depends_on_parameters: ClassVar[list[str]] = ["kaggle_dataset"]
 
     # auto complete for values
     allow_only_autocompleted_values: bool = True
@@ -174,12 +173,14 @@ class DatasetFile(StringParameterType):
         depend_on_parameter_values: list[Any],
         context: PluginContext,
     ) -> list[Autocompletion]:
+        """Return all results that match ALL provided query terms."""
+        _ = context, query_terms
         if not depend_on_parameter_values:
             raise ValueError("Select dataset before choosing a file")
 
         result = []
         files = list_files(dataset=depend_on_parameter_values[0])
-        count_csv = sum(1 for file in files if str(file).endswith(".csv"))
+        count_csv = len([file for file in files if str(file).endswith(".csv")])
         can_support_multi_csv = count_csv == len(files) > 1
         if can_support_multi_csv:
             slug = get_slugs(depend_on_parameter_values[0])
@@ -189,10 +190,9 @@ class DatasetFile(StringParameterType):
                     label="Download all csv files as a Zip file",
                 )
             )
-        for file in files:
-            result.append(Autocompletion(value=f"{file.name}", label=f"{file.name}"))
+        result += [Autocompletion(value=f"{file.name}", label=f"{file.name}") for file in files]
         if len(result) != 0:
-            result.sort(key=lambda x: x.label)  # type: ignore
+            result.sort(key=lambda x: x.label)
         else:
             result.append(Autocompletion(value="", label="No files found for this dataset"))
         return result
@@ -201,7 +201,7 @@ class DatasetFile(StringParameterType):
 class KaggleSearch(StringParameterType):
     """Kaggle Search Type"""
 
-    autocompletion_depends_on_parameters: list[str] = ["username", "api_key"]
+    autocompletion_depends_on_parameters: ClassVar[list[str]] = ["username", "api_key"]
 
     # auto complete for values
     allow_only_autocompleted_values: bool = True
@@ -214,17 +214,12 @@ class KaggleSearch(StringParameterType):
         depend_on_parameter_values: list[Any],
         context: PluginContext,
     ) -> list[Autocompletion]:
+        """Return all results that match ALL provided query terms."""
+        _ = context
         auth(depend_on_parameter_values[0], depend_on_parameter_values[1].decrypt())
-        result = []
         datasets = search(query="".join(query_terms))
-        for dataset in datasets:
-            result.append(
-                Autocompletion(
-                    value=dataset.ref,
-                    label=dataset.ref,
-                )
-            )
-        result.sort(key=lambda x: x.label)  # type: ignore
+        result = [Autocompletion(value=dataset.ref, label=dataset.ref) for dataset in datasets]
+        result.sort(key=lambda x: x.label)
         return result
 
 
@@ -283,18 +278,21 @@ class KaggleImport(WorkflowPlugin):
         self.username = username
         self.api_key = api_key
         api.validate_dataset_string(dataset=kaggle_dataset)
-        if not file_name.endswith(".zip"):
-            if self.validate_file_name(dataset=kaggle_dataset, file_name=file_name):
-                raise ValueError(
-                    "The specified file doesn't exists in the specified "
-                    f"dataset and it must be from "
-                    f"{list_files(kaggle_dataset)}"
-                )
+        if not file_name.endswith(".zip") and self.validate_file_name(
+            dataset=kaggle_dataset, file_name=file_name
+        ):
+            raise ValueError(
+                "The specified file doesn't exists in the specified "
+                f"dataset and it must be from "
+                f"{list_files(kaggle_dataset)}"
+            )
         self.kaggle_dataset = kaggle_dataset
         self.file_name = file_name
         self.dataset = dataset
 
     def execute(self, inputs: Sequence[Entities], context: ExecutionContext) -> None:
+        """Execute the workflow plugin."""
+        _ = inputs
         summary: list[tuple[str, str]] = []
         warnings: list[str] = []
         if context.user is None:
@@ -358,7 +356,7 @@ class KaggleImport(WorkflowPlugin):
         files = list_files(dataset=dataset)
         return all(str(file.name).lower() != file_name.lower() for file in files)
 
-    def download_files(self, dataset, file_name, path) -> None:
+    def download_files(self, dataset: str, file_name: str, path: str) -> None:
         """Kaggle Single Dataset File Download"""
         auth(self.username, self.api_key.decrypt())
         if file_name.endswith(".zip"):

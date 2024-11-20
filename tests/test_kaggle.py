@@ -1,5 +1,6 @@
 """Plugin tests."""
 
+from collections.abc import Generator
 from dataclasses import dataclass
 
 import pytest
@@ -47,7 +48,7 @@ class ProjectFixtureData:
 
 
 @pytest.fixture(name="project")
-def _project() -> ProjectFixtureData:
+def _project() -> Generator[ProjectFixtureData, None, None]:
     """Provide the DI project incl. assets."""
     make_new_project(PROJECT_NAME)
     make_new_dataset(
@@ -57,7 +58,6 @@ def _project() -> ProjectFixtureData:
         parameters={"file": RESOURCE_NAME},
         autoconfigure=False,
     )
-
     yield ProjectFixtureData(PROJECT_NAME, DATASET_NAME, RESOURCE_NAME)
     delete_project(PROJECT_NAME)
 
