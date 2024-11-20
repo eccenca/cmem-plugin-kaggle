@@ -123,11 +123,11 @@ def auth(username: str, api_key: str):
     api.authenticate()
 
 
-def search(query_terms: list[str]):
+def search(query: str):
     """Kaggle Dataset Search"""
     try:
-        if len(query_terms)!=0:
-            datasets = api.dataset_list(search=list_to_string(query_list=query_terms))
+        if query:
+            datasets = api.dataset_list(search=query)
         else:
             datasets = api.dataset_list()
         return datasets
@@ -199,7 +199,7 @@ class DatasetFile(StringParameterType):
                 )
             )
         for file in files:
-            result.append(Autocompletion(value=f"{file}", label=f"{file}"))
+            result.append(Autocompletion(value=f"{file.name}", label=f"{file.name}"))
         if len(result) != 0:
             result.sort(key=lambda x: x.label)  # type: ignore
         else:
@@ -227,13 +227,12 @@ class KaggleSearch(StringParameterType):
     ) -> list[Autocompletion]:
         auth(depend_on_parameter_values[0], depend_on_parameter_values[1].decrypt())
         result = []
-        datasets = search(query_terms=query_terms)
+        datasets = search(query="".join(query_terms))
         for dataset in datasets:
-            slug = get_slugs(str(dataset))
             result.append(
                 Autocompletion(
-                    value=f"{slug.owner}/{slug.name}",
-                    label=f"{slug.owner}/{slug.name}",
+                    value=dataset.ref,
+                    label=dataset.ref,
                 )
             )
         result.sort(key=lambda x: x.label)  # type: ignore
@@ -369,7 +368,7 @@ class KaggleImport(WorkflowPlugin):
         auth(self.username, self.api_key.decrypt())
         files = list_files(dataset=dataset)
         for file in files:
-            if str(file).lower() == file_name.lower():
+            if str(file.name).lower() == file_name.lower():
                 return False
         return True
 
