@@ -1,24 +1,26 @@
 """Kaggle Dataset workflow plugin module"""
-import tempfile
-from typing import Sequence, Tuple, Any
+
 import os
+import tempfile
 import time
+from collections.abc import Sequence
+from typing import Any
 from zipfile import ZipFile
 
-from kaggle.rest import ApiException
-from kaggle.api import KaggleApi
 from cmem_plugin_base.dataintegration.context import (
     ExecutionContext,
-    PluginContext,
     ExecutionReport,
+    PluginContext,
 )
 from cmem_plugin_base.dataintegration.description import Plugin, PluginParameter
 from cmem_plugin_base.dataintegration.entity import Entities
 from cmem_plugin_base.dataintegration.parameter.dataset import DatasetParameterType
 from cmem_plugin_base.dataintegration.parameter.password import Password
 from cmem_plugin_base.dataintegration.plugins import WorkflowPlugin
-from cmem_plugin_base.dataintegration.types import StringParameterType, Autocompletion
+from cmem_plugin_base.dataintegration.types import Autocompletion, StringParameterType
 from cmem_plugin_base.dataintegration.utils import write_to_dataset
+from kaggle.api import KaggleApi
+from kaggle.rest import ApiException
 
 api = KaggleApi()
 
@@ -35,7 +37,7 @@ DATASET_TYPES = {
 class KaggleDataset:
     """Kaggle Dataset Object for Internal Purpose"""
 
-    def __init__(self, owner, name):
+    def __init__(self, owner:str, name:str):
         """Constructor"""
         self.owner = owner
         self.name = name
@@ -51,9 +53,7 @@ def get_slugs(dataset) -> KaggleDataset:
     return KaggleDataset(owner="", name="")
 
 
-def upload_file(
-    dataset_id: str, remote_file_name: str, path: str, context: ExecutionContext
-):
+def upload_file(dataset_id: str, remote_file_name: str, path: str, context: ExecutionContext):
     """Check whether the file is downloaded or not"""
     file_path = os.path.join(path, remote_file_name)
     try:
@@ -97,26 +97,20 @@ def unzip_file(file_path):
         zip_file.close()
 
 
-def create_resource_from_file(
-    dataset_id: str, remote_file_name: str, context: ExecutionContext
-):
+def create_resource_from_file(dataset_id: str, remote_file_name: str, context: ExecutionContext):
     """Create Resource"""
     with open(remote_file_name, "rb") as response_file:
-        write_to_dataset(
-            dataset_id=dataset_id, file_resource=response_file, context=context.user
-        )
+        write_to_dataset(dataset_id=dataset_id, file_resource=response_file, context=context.user)
 
 
 def list_to_string(query_list: list[str]):
     """Converts each query term to a single search term"""
-
     string_join = ""
     return string_join.join(query_list)
 
 
 def auth(username: str, api_key: str):
     """Kaggle Authenticate"""
-
     # Set environment variables
     os.environ["KAGGLE_USERNAME"] = username
     os.environ["KAGGLE_KEY"] = api_key
@@ -154,9 +148,7 @@ class DatasetFileType(DatasetParameterType):
         context: PluginContext,
     ) -> list[Autocompletion]:
         try:
-            self.dataset_type = DATASET_TYPES[
-                depend_on_parameter_values[0].split(".")[-1]
-            ]
+            self.dataset_type = DATASET_TYPES[depend_on_parameter_values[0].split(".")[-1]]
         except KeyError:
             self.dataset_type = ""
         return super().autocomplete(  # type: ignore
@@ -200,9 +192,7 @@ class DatasetFile(StringParameterType):
         if len(result) != 0:
             result.sort(key=lambda x: x.label)  # type: ignore
         else:
-            result.append(
-                Autocompletion(value="", label="No files found for this dataset")
-            )
+            result.append(Autocompletion(value="", label="No files found for this dataset"))
         return result
 
 
@@ -310,7 +300,7 @@ class KaggleImport(WorkflowPlugin):
         self.dataset = dataset
 
     def execute(self, inputs: Sequence[Entities], context: ExecutionContext) -> None:
-        summary: list[Tuple[str, str]] = []
+        summary: list[tuple[str, str]] = []
         warnings: list[str] = []
         if context.user is None:
             warnings.append("User info not available")
