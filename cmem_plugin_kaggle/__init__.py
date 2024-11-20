@@ -1,3 +1,4 @@
+"""cmem-plugin-kaggle"""
 import os
 
 # Importing the Kaggle module initializes KaggleApi, which fails if the required environment

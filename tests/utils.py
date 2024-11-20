@@ -1,6 +1,7 @@
 """Testing utilities."""
+
 import os
-from typing import Optional
+from typing import ClassVar
 
 import pytest
 
@@ -8,12 +9,12 @@ import pytest
 from _pytest.mark import MarkDecorator
 from cmem.cmempy.api import get_token
 from cmem_plugin_base.dataintegration.context import (
-    UserContext,
-    TaskContext,
     ExecutionContext,
+    PluginContext,
     ReportContext,
     SystemContext,
-    PluginContext,
+    TaskContext,
+    UserContext,
 )
 
 needs_cmem: MarkDecorator = pytest.mark.skipif(
@@ -38,6 +39,7 @@ class TestUserContext(UserContext):
     """dummy user context that can be used in tests"""
 
     __test__ = False
+    default_credential: ClassVar[dict] = {}
 
     def __init__(self):
         # get access token from default service account
