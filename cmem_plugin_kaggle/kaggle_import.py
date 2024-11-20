@@ -126,7 +126,10 @@ def auth(username: str, api_key: str):
 def search(query_terms: list[str]):
     """Kaggle Dataset Search"""
     try:
-        datasets = api.dataset_list(search=list_to_string(query_list=query_terms))
+        if len(query_terms)!=0:
+            datasets = api.dataset_list(search=list_to_string(query_list=query_terms))
+        else:
+            datasets = api.dataset_list()
         return datasets
     except ApiException:
         raise ValueError("Failed to authenticate with Kaggle API") from ApiException
@@ -224,21 +227,15 @@ class KaggleSearch(StringParameterType):
     ) -> list[Autocompletion]:
         auth(depend_on_parameter_values[0], depend_on_parameter_values[1].decrypt())
         result = []
-        if len(query_terms) != 0:
-            datasets = search(query_terms=query_terms)
-            for dataset in datasets:
-                slug = get_slugs(str(dataset))
-                result.append(
-                    Autocompletion(
-                        value=f"{slug.owner}/{slug.name}",
-                        label=f"{slug.owner}/{slug.name}",
-                    )
+        datasets = search(query_terms=query_terms)
+        for dataset in datasets:
+            slug = get_slugs(str(dataset))
+            result.append(
+                Autocompletion(
+                    value=f"{slug.owner}/{slug.name}",
+                    label=f"{slug.owner}/{slug.name}",
                 )
-            result.sort(key=lambda x: x.label)  # type: ignore
-            return result
-        if len(query_terms) == 0:
-            label = "Search for kaggle datasets"
-            result.append(Autocompletion(value="", label=f"{label}"))
+            )
         result.sort(key=lambda x: x.label)  # type: ignore
         return result
 
