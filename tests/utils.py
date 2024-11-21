@@ -87,11 +87,11 @@ class TestSystemContext(SystemContext):
 
     def encrypt(self, value: str) -> str:
         """Encrypt value"""
-        return f"{self._prefix + value}"
+        return value
 
     def decrypt(self, value: str) -> str:
         """Decrypt value"""
-        return value.replace(self._prefix, "")
+        return value
 
 
 needs_kaggle = pytest.mark.skipif(

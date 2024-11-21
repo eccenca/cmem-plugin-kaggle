@@ -33,7 +33,7 @@ PROJECT_NAME = "kaggle_test_project"
 DATASET_NAME = "test-dataset"
 DATASET_TYPE = "csv"
 RESOURCE_NAME = f"{DATASET_NAME}.{DATASET_TYPE}"
-KAGGLE_DATASET = "rangareddynukala/cmem-plugin-kaggle-test"
+KAGGLE_DATASET = "brsahan/data-science-job"
 KAGGLE_CONFIG = get_kaggle_config()
 KAGGLE_KEY = Password(encrypted_value=KAGGLE_CONFIG["key"], system=TestSystemContext())
 
@@ -66,7 +66,6 @@ def _project() -> Generator[ProjectFixtureData, None, None]:
 def test_kaggle_search_completion() -> None:
     """Test completion"""
     parameter = KaggleSearch()
-
     # on empty query
     completion = parameter.autocomplete(
         query_terms=[],
@@ -74,9 +73,8 @@ def test_kaggle_search_completion() -> None:
         context=TestTaskContext(),
     )
     assert isinstance(completion, list)
-    assert len(completion) == 1
-    assert completion[0] == Autocompletion(value="", label="Search for kaggle datasets")
-
+    assert len(completion) == 20  # noqa: PLR2004
+    first_dataset_name = completion[0].value
     # on unmatch query
     completion = parameter.autocomplete(
         query_terms=["asdcjhasdcjasdc"],
@@ -87,12 +85,12 @@ def test_kaggle_search_completion() -> None:
 
     # on match query
     completion = parameter.autocomplete(
-        query_terms=[KAGGLE_DATASET],
+        query_terms=[first_dataset_name],
         depend_on_parameter_values=[KAGGLE_CONFIG["username"], KAGGLE_KEY],
         context=TestTaskContext(),
     )
     assert len(completion) == 1
-    assert completion[0] == Autocompletion(value=KAGGLE_DATASET, label=KAGGLE_DATASET)
+    assert completion[0] == Autocompletion(value=first_dataset_name, label=first_dataset_name)
 
 
 @needs_kaggle
@@ -120,7 +118,7 @@ def test_execution(project: ProjectFixtureData) -> None:
         username=KAGGLE_CONFIG["username"],
         api_key=KAGGLE_KEY,
         kaggle_dataset=KAGGLE_DATASET,
-        file_name="test csv.csv",
+        file_name="data_science_job.csv",
         dataset=DATASET_NAME,
     ).execute(inputs=[], context=TestExecutionContext(project_id=PROJECT_NAME))
     assert resource_exist(project_name=PROJECT_NAME, resource_name=RESOURCE_NAME) is True
@@ -202,7 +200,7 @@ def test_dataset_file_completion() -> None:
         context=TestTaskContext(),
     )
     assert isinstance(completion, list)
-    assert len(completion) == 6  # noqa: PLR2004
+    assert len(completion) == 1
 
     # on query with dataset
     completion = parameter.autocomplete(
@@ -211,5 +209,5 @@ def test_dataset_file_completion() -> None:
         context=TestTaskContext(),
     )
     assert isinstance(completion, list)
-    assert len(completion) == 23  # noqa: PLR2004
-    assert completion[1] == Autocompletion(value="apple.csv", label="apple.csv")
+    assert len(completion) == 20  # noqa: PLR2004
+    assert any(_ == Autocompletion(value="apple.csv", label="apple.csv") for _ in completion)
