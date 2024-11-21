@@ -4,9 +4,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/) and this project adheres to [Semantic Versioning](https://semver.org/)
 
-## [Unreleased]
+## [2.0.1] 2024-11-21
 
-TODO: add at least one Added, Changed, Deprecated, Removed, Fixed or Security section
+- upgrade template to 7.0
 
 ## [2.0.0] 2023-07-12
 

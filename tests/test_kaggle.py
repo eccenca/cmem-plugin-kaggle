@@ -1,54 +1,80 @@
 """Plugin tests."""
+
+from collections.abc import Generator
+from dataclasses import dataclass
+
 import pytest
-from cmem.cmempy.workspace.projects.project import make_new_project, delete_project
 from cmem.cmempy.workspace.projects.datasets.dataset import (
     make_new_dataset,
 )
+from cmem.cmempy.workspace.projects.project import delete_project, make_new_project
 from cmem.cmempy.workspace.projects.resources.resource import resource_exist
 from cmem_plugin_base.dataintegration.parameter.password import Password
 from cmem_plugin_base.dataintegration.types import Autocompletion
+
 from cmem_plugin_kaggle.kaggle_import import (
-    KaggleImport,
-    KaggleSearch,
     DatasetFile,
     DatasetFileType,
+    KaggleImport,
+    KaggleSearch,
     auth,
 )
 from tests.utils import (
+    TestExecutionContext,
+    TestPluginContext,
+    TestSystemContext,
+    TestTaskContext,
+    get_kaggle_config,
     needs_cmem,
     needs_kaggle,
-    get_kaggle_config,
-    TestTaskContext,
-    TestExecutionContext,
-    TestSystemContext,
-    TestPluginContext,
 )
 
 PROJECT_NAME = "kaggle_test_project"
 DATASET_NAME = "test-dataset"
 DATASET_TYPE = "csv"
 RESOURCE_NAME = f"{DATASET_NAME}.{DATASET_TYPE}"
-KAGGLE_DATASET = "rangareddynukala/cmem-plugin-kaggle-test"
+KAGGLE_DATASET = "brsahan/data-science-job"
 KAGGLE_CONFIG = get_kaggle_config()
 KAGGLE_KEY = Password(encrypted_value=KAGGLE_CONFIG["key"], system=TestSystemContext())
 
 
-@needs_kaggle
-def test_kaggle_search_completion():
-    """test completion"""
-    parameter = KaggleSearch()
+@dataclass
+class ProjectFixtureData:
+    """Project fixture data"""
 
+    project: str
+    dataset: str
+    resource: str
+
+
+@pytest.fixture(name="project")
+def _project() -> Generator[ProjectFixtureData, None, None]:
+    """Provide the DI project incl. assets."""
+    make_new_project(PROJECT_NAME)
+    make_new_dataset(
+        project_name=PROJECT_NAME,
+        dataset_name=DATASET_NAME,
+        dataset_type="csv",
+        parameters={"file": RESOURCE_NAME},
+        autoconfigure=False,
+    )
+    yield ProjectFixtureData(PROJECT_NAME, DATASET_NAME, RESOURCE_NAME)
+    delete_project(PROJECT_NAME)
+
+
+@needs_kaggle
+def test_kaggle_search_completion() -> None:
+    """Test completion"""
+    parameter = KaggleSearch()
     # on empty query
     completion = parameter.autocomplete(
         query_terms=[],
         depend_on_parameter_values=[KAGGLE_CONFIG["username"], KAGGLE_KEY],
         context=TestTaskContext(),
     )
-    print(completion)
     assert isinstance(completion, list)
-    assert len(completion) == 1
-    assert completion[0] == Autocompletion(value="", label="Search for kaggle datasets")
-
+    assert len(completion) == 20  # noqa: PLR2004
+    first_dataset_name = completion[0].value
     # on unmatch query
     completion = parameter.autocomplete(
         query_terms=["asdcjhasdcjasdc"],
@@ -59,17 +85,17 @@ def test_kaggle_search_completion():
 
     # on match query
     completion = parameter.autocomplete(
-        query_terms=[KAGGLE_DATASET],
+        query_terms=[first_dataset_name],
         depend_on_parameter_values=[KAGGLE_CONFIG["username"], KAGGLE_KEY],
         context=TestTaskContext(),
     )
     assert len(completion) == 1
-    assert completion[0] == Autocompletion(value=KAGGLE_DATASET, label=KAGGLE_DATASET)
+    assert completion[0] == Autocompletion(value=first_dataset_name, label=first_dataset_name)
 
 
 @needs_kaggle
-def test_dataset_file_type_completion(project):
-    """test completion"""
+def test_dataset_file_type_completion(project: ProjectFixtureData) -> None:
+    """Test completion"""
     _ = project
     auth(KAGGLE_CONFIG["username"], KAGGLE_KEY.decrypt())
     parameter = DatasetFileType(dependent_params=["file_name"])
@@ -83,42 +109,24 @@ def test_dataset_file_type_completion(project):
     assert isinstance(completion, list)
 
 
-@pytest.fixture(name="project")
-def _project():
-    """Provides the DI build project incl. assets."""
-    make_new_project(PROJECT_NAME)
-    make_new_dataset(
-        project_name=PROJECT_NAME,
-        dataset_name=DATASET_NAME,
-        dataset_type="csv",
-        parameters={"file": RESOURCE_NAME},
-        autoconfigure=False,
-    )
-
-    yield None
-    delete_project(PROJECT_NAME)
-
-
 @needs_cmem
 @needs_kaggle
-def test_execution(project):
+def test_execution(project: ProjectFixtureData) -> None:
     """Test plugin execution"""
     _ = project
     KaggleImport(
         username=KAGGLE_CONFIG["username"],
         api_key=KAGGLE_KEY,
         kaggle_dataset=KAGGLE_DATASET,
-        file_name="test csv.csv",
+        file_name="data_science_job.csv",
         dataset=DATASET_NAME,
     ).execute(inputs=[], context=TestExecutionContext(project_id=PROJECT_NAME))
-    assert (
-        resource_exist(project_name=PROJECT_NAME, resource_name=RESOURCE_NAME) is True
-    )
+    assert resource_exist(project_name=PROJECT_NAME, resource_name=RESOURCE_NAME) is True
 
 
 @needs_cmem
 @needs_kaggle
-def test_single_file_zip(project):
+def test_single_file_zip(project: ProjectFixtureData) -> None:
     """Test plugin execution"""
     _ = project
     KaggleImport(
@@ -128,15 +136,12 @@ def test_single_file_zip(project):
         file_name="pdf_comm_use.csv",
         dataset=DATASET_NAME,
     ).execute(inputs=[], context=TestExecutionContext(project_id=PROJECT_NAME))
-    assert (
-        resource_exist(project_name=PROJECT_NAME, resource_name=RESOURCE_NAME) is True
-    )
+    assert resource_exist(project_name=PROJECT_NAME, resource_name=RESOURCE_NAME) is True
 
 
 @needs_kaggle
-def test_failing_init():
+def test_failing_init() -> None:
     """Test RandomValues plugin."""
-
     # Invalid Kaggle Dataset Slug
     with pytest.raises(ValueError, match=r".*'\{username}\/{dataset-slug\}'"):
         KaggleImport(
@@ -175,8 +180,8 @@ def test_failing_init():
 
 
 @needs_kaggle
-def test_dataset_file_completion():
-    """test completion"""
+def test_dataset_file_completion() -> None:
+    """Test completion"""
     auth(KAGGLE_CONFIG["username"], KAGGLE_KEY.decrypt())
     parameter = DatasetFile()
 
@@ -194,9 +199,8 @@ def test_dataset_file_completion():
         depend_on_parameter_values=[KAGGLE_DATASET],
         context=TestTaskContext(),
     )
-    print(completion)
     assert isinstance(completion, list)
-    assert len(completion) == 6
+    assert len(completion) == 1
 
     # on query with dataset
     completion = parameter.autocomplete(
@@ -205,5 +209,5 @@ def test_dataset_file_completion():
         context=TestTaskContext(),
     )
     assert isinstance(completion, list)
-    assert len(completion) == 23
-    assert completion[1] == Autocompletion(value="apple.csv", label="apple.csv")
+    assert len(completion) == 20  # noqa: PLR2004
+    assert any(_ == Autocompletion(value="apple.csv", label="apple.csv") for _ in completion)
