@@ -11,6 +11,12 @@ from cmem.cmempy.workspace.projects.project import delete_project, make_new_proj
 from cmem.cmempy.workspace.projects.resources.resource import resource_exist
 from cmem_plugin_base.dataintegration.parameter.password import Password
 from cmem_plugin_base.dataintegration.types import Autocompletion
+from cmem_plugin_base.testing import (
+    TestExecutionContext,
+    TestPluginContext,
+    TestSystemContext,
+    TestTaskContext,
+)
 
 from cmem_plugin_kaggle.kaggle_import import (
     DatasetFile,
@@ -20,10 +26,6 @@ from cmem_plugin_kaggle.kaggle_import import (
     auth,
 )
 from tests.utils import (
-    TestExecutionContext,
-    TestPluginContext,
-    TestSystemContext,
-    TestTaskContext,
     get_kaggle_config,
     needs_cmem,
     needs_kaggle,
