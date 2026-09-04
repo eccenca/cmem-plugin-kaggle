@@ -75,8 +75,7 @@ def upload_file(
         else:
             raise FileNotFoundError  # noqa: TRY301
     except FileNotFoundError:
-        files = os.listdir(path)
-        paths = [str(Path(path) / file) for file in files]
+        paths = [str(entry) for entry in Path(path).iterdir()]
         summary = [("Files in the downloaded directory", list_to_string(paths))]
         context.report.update(
             ExecutionReport(
