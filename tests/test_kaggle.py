@@ -48,7 +48,7 @@ class ProjectFixtureData:
 
 
 @pytest.fixture(name="project")
-def _project() -> Generator[ProjectFixtureData, None, None]:
+def _project() -> Generator[ProjectFixtureData]:
     """Provide the DI project incl. assets."""
     make_new_project(PROJECT_NAME)
     make_new_dataset(

@@ -17,16 +17,16 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Task
-        uses: arduino/setup-task@v2
+        uses: arduino/setup-task@v3
 
       - name: Set up python
         id: setup-python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
-          python-version: '3.11'
+          python-version: '3.13'
 
       - name: Install and configure poetry
         uses: snok/install-poetry@v1
@@ -34,10 +34,6 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
           installer-parallel: true
-
-      - name: Install dynamic versioning plugin
-        run: |
-          poetry self add "poetry-dynamic-versioning[plugin]"
 
       - name: Publish Package
         env:
