@@ -73,7 +73,7 @@ def test_kaggle_search_completion() -> None:
         context=TestTaskContext(),
     )
     assert isinstance(completion, list)
-    assert len(completion) == 20  # noqa: PLR2004
+    assert len(completion) == 20
     first_dataset_name = completion[0].value
     # on unmatch query
     completion = parameter.autocomplete(
@@ -89,8 +89,9 @@ def test_kaggle_search_completion() -> None:
         depend_on_parameter_values=[KAGGLE_CONFIG["username"], KAGGLE_KEY],
         context=TestTaskContext(),
     )
-    assert len(completion) == 1
-    assert completion[0] == Autocompletion(value=first_dataset_name, label=first_dataset_name)
+    # Kaggle's catalogue is live, so this query can match datasets published
+    # after the one it was taken from; that this one is among them is the claim.
+    assert Autocompletion(value=first_dataset_name, label=first_dataset_name) in completion
 
 
 @needs_kaggle
@@ -209,5 +210,5 @@ def test_dataset_file_completion() -> None:
         context=TestTaskContext(),
     )
     assert isinstance(completion, list)
-    assert len(completion) == 20  # noqa: PLR2004
+    assert len(completion) == 20
     assert any(_ == Autocompletion(value="apple.csv", label="apple.csv") for _ in completion)
