@@ -89,8 +89,9 @@ def test_kaggle_search_completion() -> None:
         depend_on_parameter_values=[KAGGLE_CONFIG["username"], KAGGLE_KEY],
         context=TestTaskContext(),
     )
-    assert len(completion) == 1
-    assert completion[0] == Autocompletion(value=first_dataset_name, label=first_dataset_name)
+    # Kaggle's catalogue is live, so this query can match datasets published
+    # after the one it was taken from; that this one is among them is the claim.
+    assert Autocompletion(value=first_dataset_name, label=first_dataset_name) in completion
 
 
 @needs_kaggle
