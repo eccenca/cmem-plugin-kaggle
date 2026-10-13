@@ -73,7 +73,7 @@ def test_kaggle_search_completion() -> None:
         context=TestTaskContext(),
     )
     assert isinstance(completion, list)
-    assert len(completion) == 20  # noqa: PLR2004
+    assert len(completion) == 20
     first_dataset_name = completion[0].value
     # on unmatch query
     completion = parameter.autocomplete(
@@ -209,5 +209,5 @@ def test_dataset_file_completion() -> None:
         context=TestTaskContext(),
     )
     assert isinstance(completion, list)
-    assert len(completion) == 20  # noqa: PLR2004
+    assert len(completion) == 20
     assert any(_ == Autocompletion(value="apple.csv", label="apple.csv") for _ in completion)
